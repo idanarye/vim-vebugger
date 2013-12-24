@@ -27,7 +27,13 @@ function! s:createDebugger(command)
 				\'out':{'pipe':(l:debugger.shell.stdout),'buffer':''},
 				\'err':{'pipe':(l:debugger.shell.stderr),'buffer':''}}
 
+	let l:debugger.readHandlers=[]
+	let l:debugger.thinkHandlers=[]
+	let l:debugger.writeHandlers={}
+
+	let l:debugger.prevUpdateTime=&updatetime
 	function l:debugger.kill() dict
+		let &updatetime=self.prevUpdateTime
 		call self.shell.kill(15)
 	endfunction
 
@@ -46,11 +52,46 @@ function! s:createDebugger(command)
 		endfor
 		for l:k in keys(l:newLines)
 			for l:line in l:newLines[l:k]
-				call vebugger#handleLine(l:k,l:line)
+				call self.handleLine(l:k,l:line)
 			endfor
 		endfor
 	endfunction
 
+	function l:debugger.handleLine(pipeName,line) dict
+		call self.logLine(a:pipeName,a:line)
+	endfunction
+
+	function l:debugger.showLogBuffer() dict
+		if has_key(self,'logBuffer')
+			if -1<bufwinnr(self.logBuffer)
+				return
+			endif
+		endif
+		new
+		setlocal buftype=nofile
+		setlocal bufhidden=wipe
+		let self.logBuffer=bufnr('')
+		file Vebugger\ Console
+	endfunction
+
+	function l:debugger.logLine(pipeName,line) dict
+		if has_key(self,'logBuffer')
+			let l:bufwin=bufwinnr(self.logBuffer)
+			if -1<l:bufwin
+				let l:curwin=winnr()
+				exe l:bufwin.'wincmd w'
+				if 'out'==a:pipeName
+					call append (line('$'),a:line)
+				else
+					call append (line('$'),a:pipeName.":\t\t".a:line)
+				endif
+				normal G
+				exe l:curwin.'wincmd w'
+			endif
+		endif
+	endfunction
+
+	set updatetime=500
 	return l:debugger
 endfunction
 
@@ -68,6 +109,9 @@ function! vebugger#startDebugger(command)
 endfunction
 
 function! vebugger#killDebugger()
+	augroup vebuffer_shell
+		autocmd!
+	augroup END
 	if exists('s:debugger')
 		call s:debugger.shell.kill()
 		unlet s:debugger
@@ -86,6 +130,8 @@ function! vebugger#invokeReading()
 	endif
 endfunction
 
-function! vebugger#handleLine(pipe,line)
-	echo a:pipe.' - '.a:line
+function! vebugger#showLogBuffer()
+	if exists('s:debugger')
+		call s:debugger.showLogBuffer()
+	endif
 endfunction
