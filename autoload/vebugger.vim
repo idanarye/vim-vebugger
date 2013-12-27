@@ -62,7 +62,7 @@ function! s:f_debugger.handleLine(pipeName,line) dict
 	endfor
 
 	for l:thinkHandler in self.thinkHandlers
-		call l:thinkHandler.handle(l:readResult,self.state,self)
+		call l:thinkHandler.handle(l:readResult,self)
 	endfor
 endfunction
 

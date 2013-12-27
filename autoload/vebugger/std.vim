@@ -52,17 +52,17 @@ function s:standardFunctions.relativeSrcPath(filename) dict
 endfunction
 
 let s:standardThinkHandlers={}
-function! s:standardThinkHandlers.moveToCurrentLine(readResult,state,debugger) dict
+function! s:standardThinkHandlers.moveToCurrentLine(readResult,debugger) dict
 	if !empty(a:readResult.std.location)
-		if a:state.std.location!=a:readResult.std.location
-			if has_key(a:state.std.location,'file')
-				exe 'sign unplace 1 file='.fnameescape(a:state.std.location.file)
+		if a:debugger.state.std.location!=a:readResult.std.location
+			if has_key(a:debugger.state.std.location,'file')
+				exe 'sign unplace 1 file='.fnameescape(a:debugger.state.std.location.file)
 			endif
-			let a:state.std.location=deepcopy(a:readResult.std.location)
+			let a:debugger.state.std.location=deepcopy(a:readResult.std.location)
 			if !bufexists(a:readResult.std.location.file)
 				exe 'new '.(a:readResult.std.location.file)
 			endif
-			call vebugger#std#updateMarksForFile(a:state,a:readResult.std.location.file)
+			call vebugger#std#updateMarksForFile(a:debugger.state,a:readResult.std.location.file)
 			exe 'sign jump 1 file='.fnameescape(a:readResult.std.location.file)
 		endif
 	endif
