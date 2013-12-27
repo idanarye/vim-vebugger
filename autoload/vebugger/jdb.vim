@@ -1,4 +1,3 @@
-
 function! vebugger#jdb#start(entryClass,args)
 	let l:debugger=vebugger#std#startDebugger('jdb'.(
 				\has_key(a:args,'classpath')
@@ -12,6 +11,10 @@ function! vebugger#jdb#start(entryClass,args)
 	call l:debugger.writeLine('monitor where')
 
 	call l:debugger.addReadHandler(function('s:readWhere'))
+
+	call l:debugger.setWriteHandler('std','flow',function('s:writeFlow'))
+
+	call l:debugger.generateWriteActionsFromTemplate()
 
 	return l:debugger
 endfunction
@@ -46,5 +49,17 @@ function! s:readWhere(pipeName,line,readResult,debugger)
 						\'file':(l:file),
 						\'line':(l:matches[4])}
 		endif
-	end
+	endif
+endfunction
+
+function! s:writeFlow(writeAction,debugger)
+	if 'stepin'==a:writeAction
+		call a:debugger.writeLine('step')
+	elseif 'stepover'==a:writeAction
+		call a:debugger.writeLine('next')
+	elseif 'stepout'==a:writeAction
+		call a:debugger.writeLine('step up')
+	elseif 'continue'==a:writeAction
+		call a:debugger.writeLine('cont')
+	endif
 endfunction

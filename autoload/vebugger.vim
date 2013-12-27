@@ -64,6 +64,24 @@ function! s:f_debugger.handleLine(pipeName,line) dict
 	for l:thinkHandler in self.thinkHandlers
 		call l:thinkHandler.handle(l:readResult,self)
 	endfor
+
+	call self.performWriteActions()
+endfunction
+
+function! s:f_debugger.performWriteActions() dict
+	for l:namespace in keys(self.writeActions)
+		let l:handlers=get(self.writeHandlers,l:namespace)
+		if !empty(l:handlers)
+			for l:writeAction in items(self.writeActions[l:namespace])
+				if !empty(l:writeAction[1])
+					if has_key(l:handlers,l:writeAction[0])
+						call l:handlers[l:writeAction[0]].handle(l:writeAction[1],self)
+					endif
+				endif
+			endfor
+		endif
+	endfor
+	call self.generateWriteActionsFromTemplate()
 endfunction
 
 function! s:f_debugger.showLogBuffer() dict
@@ -115,6 +133,17 @@ function! s:addHandler(list,handler)
 	endif
 endfunction
 
+function! s:setHandler(dict,namespace,name,handler)
+	if !has_key(a:dict,a:namespace)
+		let a:dict[a:namespace]={}
+	endif
+	if type(a:handler) == type({})
+		let a:dict[a:namespace][a:name]=a:handler
+	elseif type(a:handler) == type(function('tr'))
+		let a:dict[a:namespace][a:name]={'handle':a:handler}
+	endif
+endfunction
+
 function! s:f_debugger.addReadHandler(handler) dict
 	call s:addHandler(self.readHandlers,a:handler)
 endfunction
@@ -123,8 +152,20 @@ function! s:f_debugger.addThinkHandler(handler) dict
 	call s:addHandler(self.thinkHandlers,a:handler)
 endfunction
 
+function! s:f_debugger.setWriteHandler(namespace,name,handler) dict
+	call s:setHandler(self.writeHandlers,a:namespace,a:name,a:handler)
+endfunction
+
 function! s:f_debugger.addCloseHandler(handler) dict
 	call s:addHandler(self.closeHandlers,a:handler)
+endfunction
+
+function! s:f_debugger.generateWriteActionsFromTemplate() dict
+	let self.writeActions=deepcopy(self.writeActionsTemplate)
+endfunction
+
+function! s:f_debugger.setWriteAction(namespace,name,value) dict
+	let self.writeActions[a:namespace][a:name]=a:value
 endfunction
 
 function! vebugger#createDebugger(command)
@@ -141,6 +182,7 @@ function! vebugger#createDebugger(command)
 
 	let l:debugger.readResultTemplate={}
 	let l:debugger.state={}
+	let l:debugger.writeActionsTemplate={}
 
 	let l:debugger.readHandlers=[]
 	let l:debugger.thinkHandlers=[]
@@ -199,4 +241,21 @@ endfunction
 
 function! vebugger#getActiveDebugger()
 	return s:debugger
+endfunction
+
+function! vebugger#setWriteAction(namespace,name,value)
+	if exists('s:debugger')
+		call s:debugger.setWriteAction(a:namespace,a:name,a:value)
+	endif
+endfunction
+
+function! vebugger#performWriteActions()
+	if exists('s:debugger')
+		call s:debugger.performWriteActions()
+	endif
+endfunction
+
+function! vebugger#setWriteActionAndPerform(namespace,name,value)
+	call vebugger#setWriteAction(a:namespace,a:name,a:value)
+	call vebugger#performWriteActions()
 endfunction

@@ -1,4 +1,3 @@
-
 function! vebugger#std#setStandardState(debugger)
 	let a:debugger.state.std={
 				\'srcpath':'.',
@@ -10,6 +9,11 @@ function! vebugger#std#setStandardReadResultTemplate(debugger)
 	let a:debugger.readResultTemplate.std={
 				\'location':{},
 				\'callstack':{}}
+endfunction
+
+function! vebugger#std#setStandardWriteactionsTemplate(debugger)
+	let a:debugger.writeActionsTemplate.std={
+				\'flow':''}
 endfunction
 
 function! vebugger#std#addStandardFunctions(debugger)
@@ -33,6 +37,7 @@ endfunction
 function! vebugger#std#standardInit(debugger)
 	call vebugger#std#setStandardState(a:debugger)
 	call vebugger#std#setStandardReadResultTemplate(a:debugger)
+	call vebugger#std#setStandardWriteactionsTemplate(a:debugger)
 	call vebugger#std#addStandardFunctions(a:debugger)
 	call vebugger#std#addStandardThinkHandlers(a:debugger)
 	call vebugger#std#addStandardCloseHandlers(a:debugger)
