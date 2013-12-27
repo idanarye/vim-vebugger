@@ -94,7 +94,7 @@ function! s:f_debugger.showLogBuffer() dict
 	setlocal buftype=nofile
 	setlocal bufhidden=wipe
 	let self.logBuffer=bufnr('')
-	file Vebugger\ Console
+	silent file Vebugger\ Console
 	wincmd p
 endfunction
 
@@ -106,6 +106,23 @@ function! s:f_debugger.closeLogBuffer() dict
 			wincmd c
 			wincmd p
 		endif
+	endif
+endfunction
+
+function! s:f_debugger.isLogBufferOpen() dict
+	if has_key(self,'logBuffer')
+		if -1<bufwinnr(self.logBuffer)
+			return 1
+		endif
+	endif
+	return 0
+endfunction
+
+function! s:f_debugger.toggleLogBuffer() dict
+	if self.isLogBufferOpen()
+		call self.closeLogBuffer()
+	else
+		call self.showLogBuffer()
 	endif
 endfunction
 
@@ -233,9 +250,9 @@ function! vebugger#invokeReading()
 	endif
 endfunction
 
-function! vebugger#showLogBuffer()
+function! vebugger#toggleLogBuffer()
 	if exists('s:debugger')
-		call s:debugger.showLogBuffer()
+		call s:debugger.toggleLogBuffer()
 	endif
 endfunction
 
