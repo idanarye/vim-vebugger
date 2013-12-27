@@ -196,3 +196,7 @@ function! vebugger#showLogBuffer()
 		call s:debugger.showLogBuffer()
 	endif
 endfunction
+
+function! vebugger#getActiveDebugger()
+	return s:debugger
+endfunction

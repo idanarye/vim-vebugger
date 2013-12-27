@@ -2,12 +2,14 @@
 function! vebugger#std#setStandardState(debugger)
 	let a:debugger.state.std={
 				\'srcpath':'.',
-				\'location':{}}
+				\'location':{},
+				\'callstack':[]}
 endfunction
 
 function! vebugger#std#setStandardReadResultTemplate(debugger)
 	let a:debugger.readResultTemplate.std={
-				\'location':{}}
+				\'location':{},
+				\'callstack':{}}
 endfunction
 
 function! vebugger#std#addStandardFunctions(debugger)
@@ -64,6 +66,21 @@ function! s:standardThinkHandlers.moveToCurrentLine(readResult,debugger) dict
 			endif
 			call vebugger#std#updateMarksForFile(a:debugger.state,a:readResult.std.location.file)
 			exe 'sign jump 1 file='.fnameescape(a:readResult.std.location.file)
+		endif
+	endif
+endfunction
+
+function! s:standardThinkHandlers.updateCallStack(readResult,debugger) dict
+	let l:callstack=a:readResult.std.callstack
+	if !empty(l:callstack)
+		if get(l:callstack,'clearOld')
+			let a:debugger.state.std.callstack=[]
+		endif
+		let l:frame={'file':(l:callstack.file),'line':(l:callstack.line)}
+		if 'after'==get(l:callstack,'add')
+			call add(a:debugger.state.std.callstack,l:frame)
+		elseif 'before'==get(l:callstack,'add')
+			call insert(a:debugger.state.std.callstack,l:frame)
 		endif
 	endif
 endfunction

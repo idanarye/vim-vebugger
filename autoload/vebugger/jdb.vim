@@ -32,13 +32,19 @@ function! s:readWhere(pipeName,line,readResult,debugger)
 	if 'out'==a:pipeName
 		let l:matches=matchlist(a:line,'\v\s*\[(\d+)]\s*(\S+)\s*\(([^:]*):(\d*)\)')
 		if 4<len(l:matches)
-			if '1'==l:matches[1] " check that this is the innermost stackframe
-				let l:file=s:findFolderFromStackTrace(a:debugger.state.std.srcpath,l:matches[2]).'/'.l:matches[3]
-				let l:file=fnamemodify(l:file,':~:.')
+			let l:file=s:findFolderFromStackTrace(a:debugger.state.std.srcpath,l:matches[2]).'/'.l:matches[3]
+			let l:file=fnamemodify(l:file,':~:.')
+			let l:frameNumber=str2nr(l:matches[1])
+			if 1==l:frameNumber " first stackframe is the current location
 				let a:readResult.std.location={
 							\'file':(l:file),
 							\'line':(l:matches[4])}
 			endif
+			let a:readResult.std.callstack={
+						\'clearOld':('1'==l:frameNumber),
+						\'add':'after',
+						\'file':(l:file),
+						\'line':(l:matches[4])}
 		endif
 	end
 endfunction
