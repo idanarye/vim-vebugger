@@ -1,6 +1,7 @@
+let g:vebugger_breakpoints=[]
+
 function! vebugger#std#setStandardState(debugger)
 	let a:debugger.state.std={
-				\'srcpath':'.',
 				\'location':{},
 				\'callstack':[]}
 endfunction
@@ -13,7 +14,8 @@ endfunction
 
 function! vebugger#std#setStandardWriteactionsTemplate(debugger)
 	let a:debugger.writeActionsTemplate.std={
-				\'flow':''}
+				\'flow':'',
+				\'breakpoints':[]}
 endfunction
 
 function! vebugger#std#addStandardFunctions(debugger)
@@ -54,8 +56,13 @@ endfunction
 
 
 let s:standardFunctions={}
-function s:standardFunctions.relativeSrcPath(filename) dict
-	return fnamemodify(self.state.std.srcpath.'/'.a:filename,':~:.')
+function! s:standardFunctions.addAllBreakpointActions(breakpoints) dict
+	for l:breakpoint in a:breakpoints
+		call self.addWriteAction('std','breakpoints',{
+					\'action':'add',
+					\'file':(l:breakpoint.file),
+					\'line':(l:breakpoint.line)})
+	endfor
 endfunction
 
 let s:standardThinkHandlers={}
@@ -92,17 +99,70 @@ endfunction
 
 let s:standardCloseHandlers={}
 function! s:standardCloseHandlers.removeCurrentMarker(debugger) dict
+	let a:debugger.state.std.location={}
 	sign unplace 1
 endfunction
 
 sign define vebugger_current text=->
+sign define vebugger_breakpoint text=** linehl=ColorColumn
 function! vebugger#std#updateMarksForFile(state,filename)
 	if bufexists(a:filename)
 		exe 'sign unplace * file='.fnameescape(a:filename)
-		if !empty(a:state.std.location)
-			if a:state.std.location.file==a:filename
-				exe 'sign place 1 name=vebugger_current line='.a:state.std.location.line.' file='.fnameescape(a:filename)
+
+		for l:breakpoint in g:vebugger_breakpoints
+			if l:breakpoint.file==a:filename
+				exe 'sign place 2 name=vebugger_breakpoint line='.l:breakpoint.line.' file='.fnameescape(l:breakpoint.file)
+			endif
+		endfor
+
+		if !empty(a:state)
+			if !empty(a:state.std.location)
+				if a:state.std.location.file==a:filename
+					exe 'sign place 1 name=vebugger_current line='.a:state.std.location.line.' file='.fnameescape(a:filename)
+				endif
 			endif
 		endif
 	endif
+endfunction
+
+function! vebugger#std#toggleBreakpoint(file,line)
+	let l:debugger=vebugger#getActiveDebugger()
+	let l:debuggerState=empty(l:debugger)
+				\? {}
+				\: l:debugger.state
+	for l:i in range(len(g:vebugger_breakpoints))
+		let l:breakpoint=g:vebugger_breakpoints[l:i]
+		if l:breakpoint.file==a:file && l:breakpoint.line==a:line
+			call remove(g:vebugger_breakpoints,l:i)
+			call vebugger#addWriteActionAndPerform('std','breakpoints',{
+						\'action':'remove',
+						\'file':(a:file),
+						\'line':(a:line)})
+			call vebugger#std#updateMarksForFile(l:debuggerState,a:file)
+			return
+		endif
+	endfor
+	call add(g:vebugger_breakpoints,{'file':(a:file),'line':(a:line)})
+	call vebugger#addWriteActionAndPerform('std','breakpoints',{
+				\'action':'add',
+				\'file':(a:file),
+				\'line':(a:line)})
+	call vebugger#std#updateMarksForFile(l:debuggerState,a:file)
+endfunction
+
+function! vebugger#std#clearBreakpoints()
+	let l:debugger=vebugger#getActiveDebugger()
+	let l:debuggerState=empty(l:debugger) ? {} : l:debugger.state
+	let l:files=[]
+	for l:breakpoint in g:vebugger_breakpoints
+		if index(l:files,l:breakpoint.file)<0
+			call add(l:files,l:breakpoint.file)
+		endif
+		call vebugger#addWriteAction('std','breakpoints',extend({'action':'remove'},l:breakpoint))
+	endfor
+	call vebugger#performWriteActions()
+	let g:vebugger_breakpoints=[]
+	for l:file in l:files
+		call vebugger#std#updateMarksForFile(l:debuggerState,l:file)
+	endfor
 endfunction

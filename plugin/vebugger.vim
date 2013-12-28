@@ -8,6 +8,9 @@ command! -nargs=0 VBGstepOut call vebugger#setWriteActionAndPerform('std','flow'
 command! -nargs=0 VBGcontinue call vebugger#setWriteActionAndPerform('std','flow','continue')
 
 command! -nargs=0 VBGtoggleLogBuffer call vebugger#toggleLogBuffer()
+command! -nargs=+ VBGtoggleBreakpoint call vebugger#std#toggleBreakpoint(<f-args>)
+command! -nargs=0 VBGtoggleBreakpointThisLine call vebugger#std#toggleBreakpoint(expand('%:~:.'),line('.'))
+command! -nargs=0 VBGclearBreakpints call vebugger#std#clearBreakpoints()
 
 if exists('g:vebugger_leader')
 	if !empty(g:vebugger_leader)
@@ -15,7 +18,9 @@ if exists('g:vebugger_leader')
 					\'i':'VBGstepIn',
 					\'o':'VBGstepOver',
 					\'O':'VBGstepOut',
-					\'c':'VBGcontinue'})
+					\'c':'VBGcontinue',
+					\'l':'VBGtoggleLogBuffer',
+					\'b':'VBGtoggleBreakpointThisLine'})
 			exe 'nnoremap '.g:vebugger_leader.s:mapping[0].' :'.s:mapping[1].'<Cr>'
 		endfor
 	endif

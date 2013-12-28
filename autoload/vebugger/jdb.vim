@@ -3,9 +3,14 @@ function! vebugger#jdb#start(entryClass,args)
 				\has_key(a:args,'classpath')
 				\? ' -classpath '.fnameescape(a:args.classpath)
 				\: ''))
+	let l:debugger.state.jdb={}
 	if has_key(a:args,'srcpath')
-		let l:debugger.state.std.srcpath=a:args.srcpath
+		let l:debugger.state.jdb.srcpath=a:args.srcpath
+	else
+		let l:debugger.state.jdb.srcpath='.'
 	endif
+	let l:debugger.state.jdb.filesToClassesMap={}
+
 	call l:debugger.writeLine('stop on '.a:entryClass.'.main')
 	call l:debugger.writeLine('run '.a:entryClass)
 	call l:debugger.writeLine('monitor where')
@@ -13,8 +18,11 @@ function! vebugger#jdb#start(entryClass,args)
 	call l:debugger.addReadHandler(function('s:readWhere'))
 
 	call l:debugger.setWriteHandler('std','flow',function('s:writeFlow'))
+	call l:debugger.setWriteHandler('std','breakpoints',function('s:writeBreakpoints'))
 
 	call l:debugger.generateWriteActionsFromTemplate()
+
+	call l:debugger.std_addAllBreakpointActions(g:vebugger_breakpoints)
 
 	return l:debugger
 endfunction
@@ -35,7 +43,7 @@ function! s:readWhere(pipeName,line,readResult,debugger)
 	if 'out'==a:pipeName
 		let l:matches=matchlist(a:line,'\v\s*\[(\d+)]\s*(\S+)\s*\(([^:]*):(\d*)\)')
 		if 4<len(l:matches)
-			let l:file=s:findFolderFromStackTrace(a:debugger.state.std.srcpath,l:matches[2]).'/'.l:matches[3]
+			let l:file=s:findFolderFromStackTrace(a:debugger.state.jdb.srcpath,l:matches[2]).'/'.l:matches[3]
 			let l:file=fnamemodify(l:file,':~:.')
 			let l:frameNumber=str2nr(l:matches[1])
 			if 1==l:frameNumber " first stackframe is the current location
@@ -62,4 +70,33 @@ function! s:writeFlow(writeAction,debugger)
 	elseif 'continue'==a:writeAction
 		call a:debugger.writeLine('cont')
 	endif
+endfunction
+
+function! s:getClassNameFromFile(filename)
+	let l:className=fnamemodify(a:filename,':t:r') " Get only the name of the file, without path or extension
+	for l:line in readfile(a:filename)
+		let l:matches=matchlist(l:line,'\vpackage\s+(%(\w|\.)+)\s*;')
+		if 1<len(l:matches)
+			return l:matches[1].'.'.l:className
+		endif
+	endfor
+	return l:className
+endfunction
+
+function! s:writeBreakpoints(writeAction,debugger)
+	for l:breakpoint in a:writeAction
+		let l:class=''
+		if has_key(a:debugger.state.jdb.filesToClassesMap,l:breakpoint.file)
+			let l:class=a:debugger.state.jdb.filesToClassesMap[l:breakpoint.file]
+		else
+			let l:class=s:getClassNameFromFile(l:breakpoint.file)
+			let a:debugger.state.jdb.filesToClassesMap[l:breakpoint.file]=l:class
+		endif
+
+		if 'add'==(l:breakpoint.action)
+			call a:debugger.writeLine('stop at '.l:class.':'.l:breakpoint.line)
+		elseif 'remove'==l:breakpoint.action
+			call a:debugger.writeLine('clear '.l:class.':'.l:breakpoint.line)
+		endif
+	endfor
 endfunction

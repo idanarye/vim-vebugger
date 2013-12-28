@@ -185,6 +185,10 @@ function! s:f_debugger.setWriteAction(namespace,name,value) dict
 	let self.writeActions[a:namespace][a:name]=a:value
 endfunction
 
+function! s:f_debugger.addWriteAction(namespace,name,value) dict
+	call add(self.writeActions[a:namespace][a:name],a:value)
+endfunction
+
 function! vebugger#createDebugger(command)
 
 	let l:debugger=deepcopy(s:f_debugger)
@@ -257,12 +261,22 @@ function! vebugger#toggleLogBuffer()
 endfunction
 
 function! vebugger#getActiveDebugger()
-	return s:debugger
+	if exists('s:debugger')
+		return s:debugger
+	else
+		return {}
+	endif
 endfunction
 
 function! vebugger#setWriteAction(namespace,name,value)
 	if exists('s:debugger')
 		call s:debugger.setWriteAction(a:namespace,a:name,a:value)
+	endif
+endfunction
+
+function! vebugger#addWriteAction(namespace,name,value)
+	if exists('s:debugger')
+		call s:debugger.addWriteAction(a:namespace,a:name,a:value)
 	endif
 endfunction
 
@@ -274,5 +288,10 @@ endfunction
 
 function! vebugger#setWriteActionAndPerform(namespace,name,value)
 	call vebugger#setWriteAction(a:namespace,a:name,a:value)
+	call vebugger#performWriteActions()
+endfunction
+
+function! vebugger#addWriteActionAndPerform(namespace,name,value)
+	call vebugger#addWriteAction(a:namespace,a:name,a:value)
 	call vebugger#performWriteActions()
 endfunction
