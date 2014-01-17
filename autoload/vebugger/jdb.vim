@@ -16,9 +16,11 @@ function! vebugger#jdb#start(entryClass,args)
 	call l:debugger.writeLine('monitor where')
 
 	call l:debugger.addReadHandler(function('s:readWhere'))
+	call l:debugger.addReadHandler(function('s:readEvaluatedExpressions'))
 
 	call l:debugger.setWriteHandler('std','flow',function('s:writeFlow'))
 	call l:debugger.setWriteHandler('std','breakpoints',function('s:writeBreakpoints'))
+	call l:debugger.setWriteHandler('std','evaluateExpressions',function('s:requestEvaluateExpression'))
 
 	call l:debugger.generateWriteActionsFromTemplate()
 
@@ -99,4 +101,23 @@ function! s:writeBreakpoints(writeAction,debugger)
 			call a:debugger.writeLine('clear '.l:class.':'.l:breakpoint.line)
 		endif
 	endfor
+endfunction
+
+function! s:requestEvaluateExpression(writeAction,debugger)
+	for l:evalAction in a:writeAction
+		call a:debugger.writeLine('eval '.l:evalAction.expression)
+	endfor
+endfunction
+
+function! s:readEvaluatedExpressions(pipeName,line,readResult,debugger)
+	if 'out'==a:pipeName
+		let l:matches=matchlist(a:line,'\v^%(\s*%(%(%(\w|\.)+)\[\d+\] )+)? ([^=]+) \= (.*)$')
+		if 3<len(l:matches)
+			let l:expression=l:matches[1]
+			let l:value=l:matches[2]
+			let a:readResult.std.evaluatedExpression={
+						\'expression':(l:matches[1]),
+						\'value':(l:matches[2])}
+		endif
+	endif
 endfunction

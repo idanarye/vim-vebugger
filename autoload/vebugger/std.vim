@@ -3,19 +3,22 @@ let g:vebugger_breakpoints=[]
 function! vebugger#std#setStandardState(debugger)
 	let a:debugger.state.std={
 				\'location':{},
-				\'callstack':[]}
+				\'callstack':[],
+				\'evaluateExpressions':[]}
 endfunction
 
 function! vebugger#std#setStandardReadResultTemplate(debugger)
 	let a:debugger.readResultTemplate.std={
 				\'location':{},
-				\'callstack':{}}
+				\'callstack':{},
+				\'evaluatedExpression':{}}
 endfunction
 
 function! vebugger#std#setStandardWriteactionsTemplate(debugger)
 	let a:debugger.writeActionsTemplate.std={
 				\'flow':'',
-				\'breakpoints':[]}
+				\'breakpoints':[],
+				\'evaluateExpressions':[]}
 endfunction
 
 function! vebugger#std#addStandardFunctions(debugger)
@@ -65,6 +68,15 @@ function! s:standardFunctions.addAllBreakpointActions(breakpoints) dict
 	endfor
 endfunction
 
+function! s:standardFunctions.eval(expression) dict
+	if -1==index(self.state.std.evaluateExpressions,a:expression)
+		call add(self.state.std.evaluateExpressions,a:expression)
+	endif
+	call self.addWriteAction('std','evaluateExpressions',{
+				\'expression':(a:expression)})
+	call self.performWriteActions()
+endfunction
+
 let s:standardThinkHandlers={}
 function! s:standardThinkHandlers.moveToCurrentLine(readResult,debugger) dict
 	if !empty(a:readResult.std.location)
@@ -93,6 +105,21 @@ function! s:standardThinkHandlers.updateCallStack(readResult,debugger) dict
 			call add(a:debugger.state.std.callstack,l:frame)
 		elseif 'before'==get(l:callstack,'add')
 			call insert(a:debugger.state.std.callstack,l:frame)
+		endif
+	endif
+endfunction
+
+function! s:standardThinkHandlers.printEvaluatedExpression(readResult,debugger) dict
+	let l:evaluatedExpression=a:readResult.std.evaluatedExpression
+	if !empty(l:evaluatedExpression)
+		if empty(l:evaluatedExpression.expression)
+			echo l:evaluatedExpression.value
+		else
+			let l:index=index(a:debugger.state.std.evaluateExpressions,l:evaluatedExpression.expression)
+			if 0<=l:index
+				call remove(a:debugger.state.std.evaluateExpressions,l:index)
+				echo l:evaluatedExpression.expression.': '.l:evaluatedExpression.value
+			endif
 		endif
 	endif
 endfunction
@@ -167,4 +194,11 @@ function! vebugger#std#clearBreakpoints()
 	for l:file in l:files
 		call vebugger#std#updateMarksForFile(l:debuggerState,l:file)
 	endfor
+endfunction
+
+function! vebugger#std#eval(expression)
+	let l:debugger=vebugger#getActiveDebugger()
+	if !empty(l:debugger) && !empty(l:debugger.std_eval)
+		call l:debugger.std_eval(a:expression)
+	endif
 endfunction
