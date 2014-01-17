@@ -1,6 +1,9 @@
 function! vebugger#jdb#start(entryClass,args)
-	let l:debugger=vebugger#std#startDebugger('jdb'.(
-				\has_key(a:args,'classpath')
+	let l:debugger=vebugger#std#startDebugger(
+				\(has_key(a:args,'command')
+				\? (a:args.command)
+				\: 'jdb')
+				\.(has_key(a:args,'classpath')
 				\? ' -classpath '.fnameescape(a:args.classpath)
 				\: ''))
 	let l:debugger.state.jdb={}
@@ -51,13 +54,13 @@ function! s:readWhere(pipeName,line,readResult,debugger)
 			if 1==l:frameNumber " first stackframe is the current location
 				let a:readResult.std.location={
 							\'file':(l:file),
-							\'line':(l:matches[4])}
+							\'line':str2nr(l:matches[4])}
 			endif
 			let a:readResult.std.callstack={
 						\'clearOld':('1'==l:frameNumber),
 						\'add':'after',
 						\'file':(l:file),
-						\'line':(l:matches[4])}
+						\'line':str2nr(l:matches[4])}
 		endif
 	endif
 endfunction
@@ -116,8 +119,8 @@ function! s:readEvaluatedExpressions(pipeName,line,readResult,debugger)
 			let l:expression=l:matches[1]
 			let l:value=l:matches[2]
 			let a:readResult.std.evaluatedExpression={
-						\'expression':(l:matches[1]),
-						\'value':(l:matches[2])}
+						\'expression':(l:expression),
+						\'value':(l:value)}
 		endif
 	endif
 endfunction
