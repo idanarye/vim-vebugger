@@ -70,14 +70,14 @@ function! s:standardThinkHandlers.moveToCurrentLine(readResult,debugger) dict
 	if !empty(a:readResult.std.location)
 		if a:debugger.state.std.location!=a:readResult.std.location
 			if has_key(a:debugger.state.std.location,'file')
-				exe 'sign unplace 1 file='.fnameescape(a:debugger.state.std.location.file)
+				exe 'sign unplace 1 file='.fnameescape(fnamemodify(a:debugger.state.std.location.file,':p'))
 			endif
 			let a:debugger.state.std.location=deepcopy(a:readResult.std.location)
 			if !bufexists(a:readResult.std.location.file)
 				exe 'new '.(a:readResult.std.location.file)
 			endif
 			call vebugger#std#updateMarksForFile(a:debugger.state,a:readResult.std.location.file)
-			exe 'sign jump 1 file='.fnameescape(a:readResult.std.location.file)
+			exe 'sign jump 1 file='.fnameescape(fnamemodify(a:readResult.std.location.file,':p'))
 		endif
 	endif
 endfunction
@@ -106,8 +106,9 @@ endfunction
 sign define vebugger_current text=->
 sign define vebugger_breakpoint text=** linehl=ColorColumn
 function! vebugger#std#updateMarksForFile(state,filename)
-	if bufexists(a:filename)
-		exe 'sign unplace * file='.fnameescape(a:filename)
+	let l:filename=fnamemodify(a:filename,":p")
+	if bufexists(l:filename)
+		exe 'sign unplace * file='.fnameescape(l:filename)
 
 		for l:breakpoint in g:vebugger_breakpoints
 			if l:breakpoint.file==a:filename
@@ -118,7 +119,8 @@ function! vebugger#std#updateMarksForFile(state,filename)
 		if !empty(a:state)
 			if !empty(a:state.std.location)
 				if a:state.std.location.file==a:filename
-					exe 'sign place 1 name=vebugger_current line='.a:state.std.location.line.' file='.fnameescape(a:filename)
+					echo l:filename
+					exe 'sign place 1 name=vebugger_current line='.a:state.std.location.line.' file='.fnameescape(l:filename)
 				endif
 			endif
 		endif
