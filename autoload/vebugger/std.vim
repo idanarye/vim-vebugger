@@ -11,14 +11,17 @@ function! vebugger#std#setStandardReadResultTemplate(debugger)
 	let a:debugger.readResultTemplate.std={
 				\'location':{},
 				\'callstack':{},
-				\'evaluatedExpression':{}}
+				\'evaluatedExpression':{},
+				\'programFinish':{}}
 endfunction
 
 function! vebugger#std#setStandardWriteactionsTemplate(debugger)
 	let a:debugger.writeActionsTemplate.std={
 				\'flow':'',
 				\'breakpoints':[],
-				\'evaluateExpressions':[]}
+				\'evaluateExpressions':[],
+				\'removeAfterDisplayed':[],
+				\'closeDebugger':''}
 endfunction
 
 function! vebugger#std#addStandardFunctions(debugger)
@@ -112,15 +115,22 @@ endfunction
 function! s:standardThinkHandlers.printEvaluatedExpression(readResult,debugger) dict
 	let l:evaluatedExpression=a:readResult.std.evaluatedExpression
 	if !empty(l:evaluatedExpression)
-		if empty(l:evaluatedExpression.expression)
-			echo l:evaluatedExpression.value
+		if empty(get(l:evaluatedExpression,'expression'))
+			echo l:evaluatedExpression.value."\n"
 		else
 			let l:index=index(a:debugger.state.std.evaluateExpressions,l:evaluatedExpression.expression)
 			if 0<=l:index
 				call remove(a:debugger.state.std.evaluateExpressions,l:index)
-				echo l:evaluatedExpression.expression.': '.l:evaluatedExpression.value
+				echo l:evaluatedExpression.expression.': '.l:evaluatedExpression.value."\n"
 			endif
 		endif
+		call a:debugger.addWriteAction('std','removeAfterDisplayed',a:readResult)
+	endif
+endfunction
+
+function! s:standardThinkHandlers.closeDebuggerWhenProgramFinishes(readResult,debugger) dict
+	if !empty(a:readResult.std.programFinish)
+		call a:debugger.setWriteAction('std','closeDebugger','close')
 	endif
 endfunction
 
