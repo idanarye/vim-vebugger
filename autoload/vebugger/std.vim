@@ -12,7 +12,8 @@ function! vebugger#std#setStandardReadResultTemplate(debugger)
 				\'location':{},
 				\'callstack':{},
 				\'evaluatedExpression':{},
-				\'programFinish':{}}
+				\'programFinish':{},
+				\'exception':{}}
 endfunction
 
 function! vebugger#std#setStandardWriteactionsTemplate(debugger)
@@ -134,6 +135,14 @@ function! s:standardThinkHandlers.closeDebuggerWhenProgramFinishes(readResult,de
 	endif
 endfunction
 
+function! s:standardThinkHandlers.printException(readResult,debugger) dict
+	if !empty(a:readResult.std.exception)
+		echohl WarningMsg
+		echo a:readResult.std.exception.message."\n"
+		echohl None
+	endif
+endfunction
+
 let s:standardCloseHandlers={}
 function! s:standardCloseHandlers.removeCurrentMarker(debugger) dict
 	let a:debugger.state.std.location={}
@@ -156,7 +165,6 @@ function! vebugger#std#updateMarksForFile(state,filename)
 		if !empty(a:state)
 			if !empty(a:state.std.location)
 				if a:state.std.location.file==a:filename
-					echo l:filename
 					exe 'sign place 1 name=vebugger_current line='.a:state.std.location.line.' file='.fnameescape(l:filename)
 				endif
 			endif

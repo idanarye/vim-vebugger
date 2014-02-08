@@ -19,6 +19,7 @@ function! vebugger#jdb#start(entryClass,args)
 	call l:debugger.writeLine('monitor where')
 
 	call l:debugger.addReadHandler(function('s:readWhere'))
+	call l:debugger.addReadHandler(function('s:readException'))
 	call l:debugger.addReadHandler(function('s:readEvaluatedExpressions'))
 
 	call l:debugger.setWriteHandler('std','flow',function('s:writeFlow'))
@@ -61,6 +62,16 @@ function! s:readWhere(pipeName,line,readResult,debugger)
 						\'add':'after',
 						\'file':(l:file),
 						\'line':str2nr(l:matches[4])}
+		endif
+	endif
+endfunction
+
+function! s:readException(pipeName,line,readResult,debugger)
+	if 'out'==a:pipeName
+		let l:matches=matchlist(a:line,'\vException occurred:\s+(\S+)')
+		if 1<len(l:matches)
+			let a:readResult.std.exception={
+						\'message':(l:matches[1])}
 		endif
 	endif
 endfunction

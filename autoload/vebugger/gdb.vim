@@ -5,6 +5,7 @@ function! vebugger#gdb#start(binaryFile,args)
 				\: 'gdb '.fnameescape(a:binaryFile)))
 	let l:debugger.state.gdb={}
 
+	call l:debugger.writeLine("set width 0")
 	call l:debugger.writeLine("define hook-stop\nwhere\nend")
 	call l:debugger.writeLine("start")
 
