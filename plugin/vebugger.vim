@@ -2,6 +2,9 @@
 
 command! -nargs=1 VBGrawWrite call vebugger#writeLine(<q-args>)
 
+command! -nargs=1 -complete=file VBGstartGDB call vebugger#gdb#start(<q-args>,{})
+command! -nargs=0 VBGkill call vebugger#killDebugger()
+
 command! -nargs=0 VBGstepIn call vebugger#setWriteActionAndPerform('std','flow','stepin')
 command! -nargs=0 VBGstepOver call vebugger#setWriteActionAndPerform('std','flow','stepover')
 command! -nargs=0 VBGstepOut call vebugger#setWriteActionAndPerform('std','flow','stepout')
