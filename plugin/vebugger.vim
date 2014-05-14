@@ -10,7 +10,7 @@ command! -nargs=0 VBGstepOver call vebugger#setWriteActionAndPerform('std','flow
 command! -nargs=0 VBGstepOut call vebugger#setWriteActionAndPerform('std','flow','stepout')
 command! -nargs=0 VBGcontinue call vebugger#setWriteActionAndPerform('std','flow','continue')
 
-command! -nargs=0 VBGtoggleLogBuffer call vebugger#toggleLogBuffer()
+command! -nargs=0 VBGtoggleTerminalBuffer call vebugger#toggleTerminalBuffer()
 command! -nargs=+ VBGtoggleBreakpoint call vebugger#std#toggleBreakpoint(<f-args>)
 command! -nargs=0 VBGtoggleBreakpointThisLine call vebugger#std#toggleBreakpoint(expand('%:~:.'),line('.'))
 command! -nargs=0 VBGclearBreakpints call vebugger#std#clearBreakpoints()
@@ -39,7 +39,7 @@ if exists('g:vebugger_leader')
 					\'o':'VBGstepOver',
 					\'O':'VBGstepOut',
 					\'c':'VBGcontinue',
-					\'l':'VBGtoggleLogBuffer',
+					\'t':'VBGtoggleTerminalBuffer',
 					\'b':'VBGtoggleBreakpointThisLine',
 					\'e':'VBGevalWordUnderCursor'})
 			exe 'nnoremap '.g:vebugger_leader.s:mapping[0].' :'.s:mapping[1].'<Cr>'

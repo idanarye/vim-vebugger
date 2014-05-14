@@ -5,8 +5,6 @@ function! vebugger#rdebug#start(entryFile,args)
 				\: 'ruby -rdebug')
 				\.' '.a:entryFile)
 	let l:debugger.state.rdebug={}
-	call l:debugger.showLogBuffer()
-
 
 	call l:debugger.addReadHandler(function('s:readWhere'))
 	call l:debugger.addReadHandler(function('s:readEvaluatedExpressions'))
@@ -19,8 +17,6 @@ function! vebugger#rdebug#start(entryFile,args)
 	call l:debugger.generateWriteActionsFromTemplate()
 
 	call l:debugger.std_addAllBreakpointActions(g:vebugger_breakpoints)
-
-	VBGtoggleLogBuffer
 
 	return l:debugger
 endfunction

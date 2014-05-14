@@ -53,7 +53,7 @@ function! s:f_debugger.invokeReading() dict
 endfunction
 
 function! s:f_debugger.handleLine(pipeName,line) dict
-	call self.logLine(a:pipeName,a:line)
+	call self.addLineToTerminal(a:pipeName,a:line)
 
 	let l:readResult=deepcopy(self.readResultTemplate,1)
 
@@ -84,24 +84,24 @@ function! s:f_debugger.performWriteActions() dict
 	call self.generateWriteActionsFromTemplate()
 endfunction
 
-function! s:f_debugger.showLogBuffer() dict
-	if has_key(self,'logBuffer')
-		if -1<bufwinnr(self.logBuffer)
+function! s:f_debugger.showTerminalBuffer() dict
+	if has_key(self,'terminalBuffer')
+		if -1<bufwinnr(self.terminalBuffer)
 			return
 		endif
 	endif
 	new
 	setlocal buftype=nofile
 	setlocal bufhidden=wipe
-	let self.logBuffer=bufnr('')
+	let self.terminalBuffer=bufnr('')
 	silent file Vebugger\ Console
 	wincmd p
 endfunction
 
-function! s:f_debugger.closeLogBuffer() dict
-	if has_key(self,'logBuffer')
-		if -1<bufwinnr(self.logBuffer)
-			let l:bufwin=bufwinnr(self.logBuffer)
+function! s:f_debugger.closeTerminalBuffer() dict
+	if has_key(self,'terminalBuffer')
+		if -1<bufwinnr(self.terminalBuffer)
+			let l:bufwin=bufwinnr(self.terminalBuffer)
 			exe l:bufwin.'wincmd w'
 			wincmd c
 			wincmd p
@@ -109,26 +109,26 @@ function! s:f_debugger.closeLogBuffer() dict
 	endif
 endfunction
 
-function! s:f_debugger.isLogBufferOpen() dict
-	if has_key(self,'logBuffer')
-		if -1<bufwinnr(self.logBuffer)
+function! s:f_debugger.isTerminalBufferOpen() dict
+	if has_key(self,'terminalBuffer')
+		if -1<bufwinnr(self.terminalBuffer)
 			return 1
 		endif
 	endif
 	return 0
 endfunction
 
-function! s:f_debugger.toggleLogBuffer() dict
-	if self.isLogBufferOpen()
-		call self.closeLogBuffer()
+function! s:f_debugger.toggleTerminalBuffer() dict
+	if self.isTerminalBufferOpen()
+		call self.closeTerminalBuffer()
 	else
-		call self.showLogBuffer()
+		call self.showTerminalBuffer()
 	endif
 endfunction
 
-function! s:f_debugger.logLine(pipeName,line) dict
-	if has_key(self,'logBuffer')
-		let l:bufwin=bufwinnr(self.logBuffer)
+function! s:f_debugger.addLineToTerminal(pipeName,line) dict
+	if has_key(self,'terminalBuffer')
+		let l:bufwin=bufwinnr(self.terminalBuffer)
 		if -1<l:bufwin
 			exe l:bufwin.'wincmd w'
 			if 'out'==a:pipeName
@@ -237,7 +237,7 @@ function! vebugger#killDebugger()
 		autocmd!
 	augroup END
 	if exists('s:debugger')
-		call s:debugger.closeLogBuffer()
+		call s:debugger.closeTerminalBuffer()
 		call s:debugger.kill()
 		unlet s:debugger
 	endif
@@ -255,9 +255,9 @@ function! vebugger#invokeReading()
 	endif
 endfunction
 
-function! vebugger#toggleLogBuffer()
+function! vebugger#toggleTerminalBuffer()
 	if exists('s:debugger')
-		call s:debugger.toggleLogBuffer()
+		call s:debugger.toggleTerminalBuffer()
 	endif
 endfunction
 
