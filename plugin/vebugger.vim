@@ -1,8 +1,6 @@
 
 
 command! -nargs=1 VBGrawWrite call vebugger#writeLine(<q-args>)
-
-command! -nargs=1 -complete=file VBGstartGDB call vebugger#gdb#start(<q-args>,{})
 command! -nargs=0 VBGkill call vebugger#killDebugger()
 
 command! -nargs=0 VBGstepIn call vebugger#setWriteActionAndPerform('std','flow','stepin')
@@ -32,6 +30,9 @@ endfunction
 command! -range -nargs=0 VBGevalSelectedText call vebugger#std#eval(s:get_visual_selection())
 command! -range -nargs=0 VBGrawWriteSelectedText call vebugger#writeLine(s:get_visual_selection())
 
+command! -nargs=1 -complete=file VBGstartGDB call vebugger#gdb#start(<q-args>,{})
+command! -nargs=1 -complete=file VBGstartPDB call vebugger#pdb#start(<q-args>,{})
+command! -nargs=1 -complete=file VBGstartRDebug call vebugger#rdebug#start(<q-args>,{})
 
 if exists('g:vebugger_leader')
 	if !empty(g:vebugger_leader)
@@ -43,6 +44,7 @@ if exists('g:vebugger_leader')
 					\'t':'VBGtoggleTerminalBuffer',
 					\'b':'VBGtoggleBreakpointThisLine',
 					\'e':'VBGevalWordUnderCursor',
+					\'E':'exe "VBGeval ".input("VBG-Eval> ")',
 					\'w':'exe "VBGrawWrite ".input("VBG> ")'})
 			exe 'nnoremap '.g:vebugger_leader.s:mapping[0].' :'.s:mapping[1].'<Cr>'
 		endfor
