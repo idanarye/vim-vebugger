@@ -2,7 +2,7 @@ function! vebugger#gdb#start(binaryFile,args)
 	let l:debugger=vebugger#std#startDebugger(
 				\(has_key(a:args,'command')
 				\? (a:args.command)
-				\: 'gdb '.fnameescape(a:binaryFile)))
+				\: 'gdb --nowindows --silent '.fnameescape(a:binaryFile)))
 	let l:debugger.state.gdb={}
 
 	call l:debugger.writeLine("set width 0")

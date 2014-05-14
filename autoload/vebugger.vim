@@ -193,7 +193,8 @@ function! vebugger#createDebugger(command)
 
 	let l:debugger=deepcopy(s:f_debugger)
 
-	let l:debugger.shell=vimproc#popen3(a:command)
+	"let l:debugger.shell=vimproc#popen3(a:command)
+	let l:debugger.shell=vimproc#ptyopen(a:command,3)
 	let l:debugger.outBuffer=''
 	let l:debugger.errBuffer=''
 
