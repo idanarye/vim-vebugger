@@ -1,0 +1,111 @@
+function! vebugger#pdb#start(entryFile,args)
+	let l:debugger=vebugger#std#startDebugger(
+				\(has_key(a:args,'command')
+				\? (a:args.command)
+				\: 'python -m pdb')
+				\.' '.a:entryFile)
+	let l:debugger.state.pdb={
+				\'willPrintNext':{'expression':'','stage':0}
+				\}
+
+	call l:debugger.addReadHandler(function('s:readWhere'))
+	call l:debugger.addReadHandler(function('s:readFinish'))
+	call l:debugger.addReadHandler(function('s:readEvaluatedExpressions'))
+
+	call l:debugger.setWriteHandler('std','flow',function('s:writeFlow'))
+	call l:debugger.setWriteHandler('std','breakpoints',function('s:writeBreakpoints'))
+	call l:debugger.setWriteHandler('std','closeDebugger',function('s:closeDebugger'))
+	call l:debugger.setWriteHandler('std','evaluateExpressions',function('s:requestEvaluateExpression'))
+	call l:debugger.setWriteHandler('std','removeAfterDisplayed',function('s:removeAfterDisplayed'))
+
+	call l:debugger.generateWriteActionsFromTemplate()
+
+	call l:debugger.std_addAllBreakpointActions(g:vebugger_breakpoints)
+
+	return l:debugger
+endfunction
+
+function! s:readWhere(pipeName,line,readResult,debugger)
+	if 'out'==a:pipeName
+		let l:matches=matchlist(a:line,'\v^\> (.+)\((\d+)\).*\(\)$')
+
+		if 2<len(l:matches)
+			let l:file=l:matches[1]
+			if !empty(glob(l:file))
+				let l:line=str2nr(l:matches[2])
+				let a:readResult.std.location={
+							\'file':(l:file),
+							\'line':(l:line)}
+			endif
+		endif
+	endif
+endfunction
+
+function! s:readFinish(pipeName,line,readResult,debugger)
+	if a:line=='The program finished and will be restarted'
+		let a:readResult.std.programFinish={'finish':1}
+	endif
+endfunction
+
+function! s:writeFlow(writeAction,debugger)
+	if 'stepin'==a:writeAction
+		call a:debugger.writeLine('step')
+	elseif 'stepover'==a:writeAction
+		call a:debugger.writeLine('next')
+	elseif 'stepout'==a:writeAction
+		call a:debugger.writeLine('return')
+	elseif 'continue'==a:writeAction
+		call a:debugger.writeLine('continue')
+	endif
+endfunction
+
+function! s:closeDebugger(writeAction,debugger)
+	call a:debugger.writeLine('quit')
+endfunction
+
+function! s:writeBreakpoints(writeAction,debugger)
+	for l:breakpoint in a:writeAction
+		if 'add'==(l:breakpoint.action)
+			call a:debugger.writeLine('break '.fnameescape(fnamemodify(l:breakpoint.file,':p')).':'.l:breakpoint.line)
+		elseif 'remove'==l:breakpoint.action
+			call a:debugger.writeLine('clear '.fnameescape(fnamemodify(l:breakpoint.file,':p')).':'.l:breakpoint.line)
+		endif
+	endfor
+endfunction
+
+function! s:requestEvaluateExpression(writeAction,debugger)
+	for l:evalAction in a:writeAction
+		call a:debugger.writeLine('p '.l:evalAction.expression)
+	endfor
+endfunction
+
+function! s:readEvaluatedExpressions(pipeName,line,readResult,debugger)
+	if 'out'==a:pipeName
+		if 1==a:debugger.state.pdb.willPrintNext.stage "Reading the empty line after the command
+			let a:debugger.state.pdb.willPrintNext.stage=2
+		elseif 2==a:debugger.state.pdb.willPrintNext.stage "Reading the actual value to print
+			let l:expression=a:debugger.state.pdb.willPrintNext.expression
+			let l:value=a:line
+			let a:readResult.std.evaluatedExpression={
+						\'expression':(l:expression),
+						\'value':(l:value)}
+			"Reset the state
+			let a:debugger.state.pdb.willPrintNext.expression=''
+			let a:debugger.state.pdb.willPrintNext.stage=0
+		else "Any other stage treated as 0
+			let l:matches=matchlist(a:line,'\v^\(Pdb\) p (.*)$')
+			if 1<len(l:matches)
+				let a:debugger.state.pdb.willPrintNext.expression=l:matches[1]
+				let a:debugger.state.pdb.willPrintNext.stage=1
+			endif
+		endif
+	endif
+endfunction
+
+function! s:removeAfterDisplayed(writeAction,debugger)
+	for l:removeAction in a:writeAction
+		if has_key(l:removeAction,'id')
+			"call a:debugger.writeLine('undisplay '.l:removeAction.id)
+		endif
+	endfor
+endfunction
