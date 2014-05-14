@@ -45,7 +45,8 @@ if exists('g:vebugger_leader')
 					\'b':'VBGtoggleBreakpointThisLine',
 					\'e':'VBGevalWordUnderCursor',
 					\'E':'exe "VBGeval ".input("VBG-Eval> ")',
-					\'w':'exe "VBGrawWrite ".input("VBG> ")'})
+					\'w':'exe "VBGrawWrite ".getline(".")',
+					\'W':'exe "VBGrawWrite ".input("VBG> ")'})
 			exe 'nnoremap '.g:vebugger_leader.s:mapping[0].' :'.s:mapping[1].'<Cr>'
 		endfor
 		for s:mapping in items({
