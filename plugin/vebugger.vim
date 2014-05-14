@@ -30,6 +30,7 @@ function! s:get_visual_selection()
 endfunction
 
 command! -range -nargs=0 VBGevalSelectedText call vebugger#std#eval(s:get_visual_selection())
+command! -range -nargs=0 VBGrawWriteSelectedText call vebugger#writeLine(s:get_visual_selection())
 
 
 if exists('g:vebugger_leader')
@@ -41,11 +42,13 @@ if exists('g:vebugger_leader')
 					\'c':'VBGcontinue',
 					\'t':'VBGtoggleTerminalBuffer',
 					\'b':'VBGtoggleBreakpointThisLine',
-					\'e':'VBGevalWordUnderCursor'})
+					\'e':'VBGevalWordUnderCursor',
+					\'w':'exe "VBGrawWrite ".input("VBG> ")'})
 			exe 'nnoremap '.g:vebugger_leader.s:mapping[0].' :'.s:mapping[1].'<Cr>'
 		endfor
 		for s:mapping in items({
-					\'e':'VBGevalSelectedText'})
+					\'e':'VBGevalSelectedText',
+					\'w':'VBGrawWriteSelectedText'})
 			exe 'vnoremap '.g:vebugger_leader.s:mapping[0].' :'.s:mapping[1].'<Cr>'
 		endfor
 	endif

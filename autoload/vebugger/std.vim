@@ -154,18 +154,18 @@ sign define vebugger_breakpoint text=** linehl=ColorColumn
 function! vebugger#std#updateMarksForFile(state,filename)
 	let l:filename=fnamemodify(a:filename,":p")
 	if bufexists(l:filename)
-		exe 'sign unplace * file='.fnameescape(l:filename)
+		exe 'sign unplace * file='.fnameescape(fnamemodify(l:filename,':p'))
 
 		for l:breakpoint in g:vebugger_breakpoints
-			if l:breakpoint.file==a:filename
-				exe 'sign place 2 name=vebugger_breakpoint line='.l:breakpoint.line.' file='.fnameescape(l:breakpoint.file)
+			if fnamemodify(l:breakpoint.file,':p')==fnamemodify(a:filename,':p')
+				exe 'sign place 2 name=vebugger_breakpoint line='.l:breakpoint.line.' file='.fnameescape(fnamemodify(l:breakpoint.file,':p'))
 			endif
 		endfor
 
 		if !empty(a:state)
 			if !empty(a:state.std.location)
-				if a:state.std.location.file==a:filename
-					exe 'sign place 1 name=vebugger_current line='.a:state.std.location.line.' file='.fnameescape(l:filename)
+				if fnamemodify(a:state.std.location.file,':p')==fnamemodify(a:filename,':p')
+					exe 'sign place 1 name=vebugger_current line='.a:state.std.location.line.' file='.fnameescape(fnamemodify(l:filename,':p'))
 				endif
 			endif
 		endif
