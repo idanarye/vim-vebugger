@@ -50,6 +50,7 @@ function! s:f_debugger.invokeReading() dict
 				\|| 'error'==l:checkpid[0]
 		call self.kill()
 	endif
+	call feedkeys("f\e") " Make sure the CursorHold event is refired even if the user does nothing
 endfunction
 
 function! s:f_debugger.handleLine(pipeName,line) dict
