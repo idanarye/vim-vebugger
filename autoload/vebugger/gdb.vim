@@ -1,18 +1,31 @@
+function! vebugger#gdb#searchAndAttach(binaryFile)
+	let l:processId=vebugger#util#selectProcessOfFile(a:binaryFile)
+	if 0<l:processId
+		call vebugger#gdb#start(a:binaryFile,{'pid':l:processId})
+	endif
+endfunction
+
 function! vebugger#gdb#start(binaryFile,args)
-	let l:debugger=vebugger#std#startDebugger(
-				\(has_key(a:args,'command')
-				\? (a:args.command)
-				\: 'gdb -i mi --silent '.fnameescape(a:binaryFile)))
+	"let l:debugger=vebugger#std#startDebugger(
+				"\(has_key(a:args,'command')
+				"\? (a:args.command)
+				"\: 'gdb -i mi --silent '.fnameescape(a:binaryFile)))
+
+	let l:debugger=vebugger#std#startDebugger('gdb -i mi --silent '.fnameescape(a:binaryFile))
 	let l:debugger.state.gdb={}
 
-	call l:debugger.writeLine("set args 1>&2")
 
 	let l:debugger.pipes.err.annotation = "err&prg\t\t"
 	call l:debugger.writeLine("set width 0")
 	call l:debugger.writeLine("define hook-stop\nwhere\nend")
 
-	call vebugger#std#openShellBuffer(l:debugger)
-	call l:debugger.writeLine("start")
+	if get(a:args,'pid') "Attach to process
+		call l:debugger.writeLine('attach '.string(a:args.pid))
+	else
+		call l:debugger.writeLine("set args 1>&2")
+		call vebugger#std#openShellBuffer(l:debugger)
+		call l:debugger.writeLine('start')
+	end
 
 
 	call l:debugger.addReadHandler(function('s:readProgramOutput'))
@@ -75,7 +88,7 @@ function! s:readWhere(pipeName,line,readResult,debugger)
 endfunction
 
 function! s:readFinish(pipeName,line,readResult,debugger)
-	if a:line=~'\c\V\^"[Inferior \.\*exited normally]'
+	if a:line=~'\c\V\^~"[Inferior \.\*exited normally]'
 		let a:readResult.std.programFinish={'finish':1}
 	endif
 endfunction

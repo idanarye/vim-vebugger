@@ -16,21 +16,11 @@ command! -nargs=0 VBGclearBreakpints call vebugger#std#clearBreakpoints()
 command! -nargs=1 VBGeval call vebugger#std#eval(<q-args>)
 command! -nargs=0 VBGevalWordUnderCursor call vebugger#std#eval(expand('<cword>'))
 
-"Shamefully stolen from http://stackoverflow.com/a/6271254/794380
-function! s:get_visual_selection()
-	" Why is this not a built-in Vim script function?!
-	let [lnum1, col1] = getpos("'<")[1:2]
-	let [lnum2, col2] = getpos("'>")[1:2]
-	let lines = getline(lnum1, lnum2)
-	let lines[-1] = lines[-1][: col2 - (&selection == 'inclusive' ? 1 : 2)]
-	let lines[0] = lines[0][col1 - 1:]
-	return join(lines, "\n")
-endfunction
-
-command! -range -nargs=0 VBGevalSelectedText call vebugger#std#eval(s:get_visual_selection())
-command! -range -nargs=0 VBGrawWriteSelectedText call vebugger#writeLine(s:get_visual_selection())
+command! -range -nargs=0 VBGevalSelectedText call vebugger#std#eval(vebugger#util#get_visual_selection())
+command! -range -nargs=0 VBGrawWriteSelectedText call vebugger#writeLine(vebugger#util#get_visual_selection())
 
 command! -nargs=1 -complete=file VBGstartGDB call vebugger#gdb#start(<q-args>,{})
+command! -nargs=1 -complete=file VBGattachGDB call vebugger#gdb#searchAndAttach(<q-args>)
 command! -nargs=1 -complete=file VBGstartPDB call vebugger#pdb#start(<q-args>,{})
 command! -nargs=1 -complete=file VBGstartRDebug call vebugger#rdebug#start(<q-args>,{})
 
