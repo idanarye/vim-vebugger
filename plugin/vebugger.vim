@@ -43,6 +43,7 @@ if exists('g:vebugger_leader')
 					\'c':'VBGcontinue',
 					\'t':'VBGtoggleTerminalBuffer',
 					\'b':'VBGtoggleBreakpointThisLine',
+					\'B':'VBGclearBreakpints',
 					\'e':'VBGevalWordUnderCursor',
 					\'E':'exe "VBGeval ".input("VBG-Eval> ")',
 					\'w':'exe "VBGrawWrite ".getline(".")',
