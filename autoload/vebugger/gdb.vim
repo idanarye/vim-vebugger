@@ -37,6 +37,7 @@ function! vebugger#gdb#start(binaryFile,args)
 	call l:debugger.setWriteHandler('std','breakpoints',function('s:writeBreakpoints'))
 	call l:debugger.setWriteHandler('std','closeDebugger',function('s:closeDebugger'))
 	call l:debugger.setWriteHandler('std','evaluateExpressions',function('s:requestEvaluateExpression'))
+	call l:debugger.setWriteHandler('std','executeStatements',function('s:executeStatements'))
 
 	call l:debugger.generateWriteActionsFromTemplate()
 
@@ -122,6 +123,20 @@ endfunction
 function! s:requestEvaluateExpression(writeAction,debugger)
 	for l:evalAction in a:writeAction
 		call a:debugger.writeLine('print '.l:evalAction.expression)
+	endfor
+endfunction
+
+function! s:executeStatements(writeAction,debugger)
+	for l:evalAction in a:writeAction
+		if has_key(l:evalAction,'statement')
+			let l:statement=l:evalAction.statement
+			let l:statement=substitute(l:statement,'\v;\s*$','','') "remove trailing `;`
+			if l:statement=~'\v^[^(]+\=.+'
+				call a:debugger.writeLine('set '.l:statement)
+			else
+				call a:debugger.writeLine('call '.l:statement)
+			endif
+		endif
 	endfor
 endfunction
 

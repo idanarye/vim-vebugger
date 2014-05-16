@@ -24,6 +24,7 @@ function! vebugger#std#setStandardWriteactionsTemplate(debugger)
 				\'flow':'',
 				\'breakpoints':[],
 				\'evaluateExpressions':[],
+				\'executeStatements':[],
 				\'removeAfterDisplayed':[],
 				\'closeDebugger':''}
 endfunction
@@ -116,6 +117,13 @@ function! s:standardFunctions.eval(expression) dict
 	endif
 	call self.addWriteAction('std','evaluateExpressions',{
 				\'expression':(a:expression)})
+	call self.performWriteActions()
+endfunction
+
+"Executes a statement in the debugged program
+function! s:standardFunctions.execute(statement) dict
+	call self.addWriteAction('std','executeStatements',{
+				\'statement':(a:statement)})
 	call self.performWriteActions()
 endfunction
 
@@ -270,5 +278,12 @@ function! vebugger#std#eval(expression)
 	let l:debugger=vebugger#getActiveDebugger()
 	if !empty(l:debugger) && !empty(l:debugger.std_eval)
 		call l:debugger.std_eval(a:expression)
+	endif
+endfunction
+
+function! vebugger#std#execute(statement)
+	let l:debugger=vebugger#getActiveDebugger()
+	if !empty(l:debugger) && !empty(l:debugger.std_eval)
+		call l:debugger.std_execute(a:statement)
 	endif
 endfunction
