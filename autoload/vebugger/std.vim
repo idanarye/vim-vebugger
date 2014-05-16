@@ -9,6 +9,7 @@ endfunction
 
 function! vebugger#std#setStandardReadResultTemplate(debugger)
 	let a:debugger.readResultTemplate.std={
+				\'programOutput':{},
 				\'location':{},
 				\'callstack':{},
 				\'evaluatedExpression':{},
@@ -61,8 +62,43 @@ function! vebugger#std#startDebugger(command)
 endfunction
 
 
+function! vebugger#std#openShellBuffer(debugger)
+	if has_key(a:debugger,'shellBuffer')
+		if -1<bufwinnr(a:debugger.shellBuffer)
+			return
+		endif
+	endif
+	let l:oldBuffer=bufnr('Vebugger:Shell')
+	if -1<l:oldBuffer
+		let a:debugger.shellBuffer=l:oldBuffer
+		call a:debugger.std_addLineToShellBuffer('')
+		call a:debugger.std_addLineToShellBuffer('==================')
+		call a:debugger.std_addLineToShellBuffer('')
+		return
+	endif
+	8 new
+	let b:debugger=a:debugger
+	autocmd BufDelete <buffer> call b:debugger.kill()
+	setlocal buftype=nofile
+	setlocal bufhidden=wipe
+	let a:debugger.shellBuffer=bufnr('')
+	silent file Vebugger:Shell
+	wincmd p
+endfunction
 
 let s:standardFunctions={}
+function! s:standardFunctions.addLineToShellBuffer(line) dict
+	if has_key(self,'shellBuffer')
+		let l:bufwin=bufwinnr(self.shellBuffer)
+		if -1<l:bufwin
+			exe l:bufwin.'wincmd w'
+			call append (line('$'),a:line)
+			normal G
+			wincmd p
+		endif
+	endif
+endfunction
+
 function! s:standardFunctions.addAllBreakpointActions(breakpoints) dict
 	for l:breakpoint in a:breakpoints
 		call self.addWriteAction('std','breakpoints',{
@@ -82,6 +118,13 @@ function! s:standardFunctions.eval(expression) dict
 endfunction
 
 let s:standardThinkHandlers={}
+function! s:standardThinkHandlers.addProgramOutputToShell(readResult,debugger) dict
+	let l:programOutput=a:readResult.std.programOutput
+	if !empty(l:programOutput)
+		call a:debugger.std_addLineToShellBuffer(l:programOutput.line)
+	endif
+endfunction
+
 function! s:standardThinkHandlers.moveToCurrentLine(readResult,debugger) dict
 	if !empty(a:readResult.std.location)
 		if a:debugger.state.std.location!=a:readResult.std.location
@@ -123,6 +166,7 @@ function! s:standardThinkHandlers.printEvaluatedExpression(readResult,debugger) 
 			if 0<=l:index
 				call remove(a:debugger.state.std.evaluateExpressions,l:index)
 				echo l:evaluatedExpression.expression.': '.l:evaluatedExpression.value."\n"
+				let g:echo=l:evaluatedExpression.expression.': '.l:evaluatedExpression.value."\n"
 			endif
 		endif
 		call a:debugger.addWriteAction('std','removeAfterDisplayed',a:readResult)

@@ -9,7 +9,7 @@ function! s:readNewLinesFromPipe(pipeObject)
 	"parse
 	let l:lastNewline=strridx(a:pipeObject.buffer,"\n")
 	if 0<=l:lastNewline
-		let l:outLines=split(strpart(a:pipeObject.buffer,0,l:lastNewline),'\n\|\r\|\r\n')
+		let l:outLines=split(strpart(a:pipeObject.buffer,0,l:lastNewline),'\r\n\|\n\|\r')
 		let a:pipeObject.buffer=strpart(a:pipeObject.buffer,l:lastNewline+1)
 		return l:outLines
 	endif
@@ -20,11 +20,16 @@ endfunction
 let s:f_debugger={}
 
 function! s:f_debugger.kill() dict
+	if self.shell.is_valid
+		call self.addLineToTerminal('','== DEBUGGER TERMINATED ==')
+	endif
 	let &updatetime=self.prevUpdateTime
 	call self.shell.kill(15)
-	for l:closeHandler in s:debugger.closeHandlers
-		call l:closeHandler.handle(self)
-	endfor
+	if exists('s:debugger')
+		for l:closeHandler in s:debugger.closeHandlers
+			call l:closeHandler.handle(self)
+		endfor
+	endif
 endfunction
 
 function! s:f_debugger.writeLine(line) dict
@@ -95,7 +100,7 @@ function! s:f_debugger.showTerminalBuffer() dict
 	setlocal buftype=nofile
 	setlocal bufhidden=wipe
 	let self.terminalBuffer=bufnr('')
-	silent file Vebugger\ Console
+	silent file Vebugger:Ternimal
 	wincmd p
 endfunction
 
@@ -132,10 +137,12 @@ function! s:f_debugger.addLineToTerminal(pipeName,line) dict
 		let l:bufwin=bufwinnr(self.terminalBuffer)
 		if -1<l:bufwin
 			exe l:bufwin.'wincmd w'
-			if 'out'==a:pipeName
-				call append (line('$'),a:line)
+			if has_key(self,'pipes')
+						\&&has_key(self.pipes,a:pipeName)
+						\&&has_key(self.pipes[a:pipeName],'annotation')
+				call append (line('$'),(self.pipes[a:pipeName].annotation).(a:line))
 			else
-				call append (line('$'),a:pipeName.":\t\t".a:line)
+				call append (line('$'),a:line)
 			endif
 			normal G
 			wincmd p
@@ -194,14 +201,14 @@ function! vebugger#createDebugger(command)
 
 	let l:debugger=deepcopy(s:f_debugger)
 
-	"let l:debugger.shell=vimproc#popen3(a:command)
 	let l:debugger.shell=vimproc#ptyopen(a:command,3)
+
 	let l:debugger.outBuffer=''
 	let l:debugger.errBuffer=''
 
 	let l:debugger.pipes={
 				\'out':{'pipe':(l:debugger.shell.stdout),'buffer':''},
-				\'err':{'pipe':(l:debugger.shell.stderr),'buffer':''}}
+				\'err':{'pipe':(l:debugger.shell.stderr),'buffer':'','annotation':"err:\t\t"}}
 
 	let l:debugger.readResultTemplate={}
 	let l:debugger.state={}

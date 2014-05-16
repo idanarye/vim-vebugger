@@ -2,13 +2,20 @@ function! vebugger#gdb#start(binaryFile,args)
 	let l:debugger=vebugger#std#startDebugger(
 				\(has_key(a:args,'command')
 				\? (a:args.command)
-				\: 'gdb --nowindows --silent '.fnameescape(a:binaryFile)))
+				\: 'gdb -i mi --silent '.fnameescape(a:binaryFile)))
 	let l:debugger.state.gdb={}
 
+	call l:debugger.writeLine("set args 1>&2")
+
+	let l:debugger.pipes.err.annotation = "err&prg\t\t"
 	call l:debugger.writeLine("set width 0")
 	call l:debugger.writeLine("define hook-stop\nwhere\nend")
+
+	call vebugger#std#openShellBuffer(l:debugger)
 	call l:debugger.writeLine("start")
 
+
+	call l:debugger.addReadHandler(function('s:readProgramOutput'))
 	call l:debugger.addReadHandler(function('s:readWhere'))
 	call l:debugger.addReadHandler(function('s:readFinish'))
 	call l:debugger.addReadHandler(function('s:readEvaluatedExpressions'))
@@ -37,9 +44,18 @@ function! s:findFolderFromStackTrace(src,nameFromStackTrace)
 	return l:path
 endfunction
 
+function! s:readProgramOutput(pipeName,line,readResult,debugger)
+	if 'err'==a:pipeName
+				\&&a:line!~'\v^[=~*&^]'
+				\&&a:line!~'\V(gdb)'
+		let a:readResult.std.programOutput={'line':a:line}
+	endif
+endfunction
+
 function! s:readWhere(pipeName,line,readResult,debugger)
 	if 'out'==a:pipeName
-		let l:matches=matchlist(a:line,'\v#(\d+)\s+(\S+)\s+\(.*\)\s+at\s+([^:]+):(\d+)')
+		"let l:matches=matchlist(a:line,'\v#(\d+)\s+(\S+)\s+\(.*\)\s+at\s+([^:]+):(\d+)')
+		let l:matches=matchlist(a:line,'\v^\~"#(\d+)\s+(\S+)\s+\(.*\)\s+at\s+([^:]+):(\d+)')
 		if 4<len(l:matches)
 			let l:file=l:matches[3]
 			let l:file=fnamemodify(l:file,':~:.')
@@ -59,7 +75,7 @@ function! s:readWhere(pipeName,line,readResult,debugger)
 endfunction
 
 function! s:readFinish(pipeName,line,readResult,debugger)
-	if a:line=~'\c\V[Inferior 1\.\*exited normally]'
+	if a:line=~'\c\V\^"[Inferior \.\*exited normally]'
 		let a:readResult.std.programFinish={'finish':1}
 	endif
 endfunction
@@ -96,16 +112,30 @@ function! s:requestEvaluateExpression(writeAction,debugger)
 	endfor
 endfunction
 
-function! s:readEvaluatedExpressions(pipeName,line,readResult,debugger)
+function! s:readEvaluatedExpressions(pipeName,line,readResult,debugger) dict
 	if 'out'==a:pipeName
-		let l:matches=matchlist(a:line,'\v\$(\d+) \= (.*)$')
-		if 2<len(l:matches)
-			let l:expression=l:matches[1]
-			let l:value=l:matches[2]
-			let a:readResult.std.evaluatedExpression={
-						\'expression':0,
-						\'value':(l:value)}
-			let g:y=a:readResult
+		if has_key(self,'nextExpressionToBePrinted')
+			let l:matches=matchlist(a:line,'\v^\~"\$(\d+) \= (.*)"$')
+			if 2<len(l:matches)
+				let l:expression=l:matches[1]
+				let l:value=l:matches[2]
+				let a:readResult.std.evaluatedExpression={
+							\'expression':self.nextExpressionToBePrinted,
+							\'value':(s:unescapeString(l:value))}
+			endif
+			call remove(self,'nextExpressionToBePrinted')
+		else
+			let l:matches=matchlist(a:line,'\v^\&"print (.{-})(\\r)?(\\n)?"$')
+			if 1<len(l:matches)
+				let self.nextExpressionToBePrinted=s:unescapeString(l:matches[1])
+			endif
 		endif
 	endif
+endfunction
+
+function! s:unescapeString(str)
+	let l:result=a:str
+	let l:result=substitute(l:result,'\\"','"','g')
+	let l:result=substitute(l:result,'\\t',"\t",'g')
+	return l:result
 endfunction
