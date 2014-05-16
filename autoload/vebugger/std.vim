@@ -2,6 +2,8 @@ let g:vebugger_breakpoints=[]
 
 function! vebugger#std#setStandardState(debugger)
 	let a:debugger.state.std={
+				\'config':{
+				\	'externalFileStop_flowCommand':''},
 				\'location':{},
 				\'callstack':[],
 				\'evaluateExpressions':[]}
@@ -127,6 +129,12 @@ endfunction
 
 function! s:standardThinkHandlers.moveToCurrentLine(readResult,debugger) dict
 	if !empty(a:readResult.std.location)
+		if !empty(a:debugger.state.std.config.externalFileStop_flowCommand) " Do we need to worry about stopping at external files?
+			if 0!=stridx(tolower(fnamemodify(a:readResult.std.location.file,':p')),tolower(getcwd()))
+				call a:debugger.setWriteAction('std','flow',a:debugger.state.std.config.externalFileStop_flowCommand)
+				return
+			endif
+		endif
 		if a:debugger.state.std.location!=a:readResult.std.location
 			if has_key(a:debugger.state.std.location,'file')
 				exe 'sign unplace 1 file='.fnameescape(fnamemodify(a:debugger.state.std.location.file,':p'))

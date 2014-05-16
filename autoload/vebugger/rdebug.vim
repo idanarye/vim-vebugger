@@ -5,7 +5,14 @@ function! vebugger#rdebug#start(entryFile,args)
 				\: 'ruby -rdebug')
 				\.' '.a:entryFile)
 	let l:debugger.state.rdebug={}
+	let l:debugger.state.std.config.externalFileStop_flowCommand='stepover' "skip external modules
 
+
+	call l:debugger.writeLine("$stdout=$stderr")
+	let l:debugger.pipes.err.annotation = "err&prg\t\t"
+	call vebugger#std#openShellBuffer(l:debugger)
+
+	call l:debugger.addReadHandler(function('s:readProgramOutput'))
 	call l:debugger.addReadHandler(function('s:readWhere'))
 	call l:debugger.addReadHandler(function('s:readEvaluatedExpressions'))
 
@@ -19,6 +26,12 @@ function! vebugger#rdebug#start(entryFile,args)
 	call l:debugger.std_addAllBreakpointActions(g:vebugger_breakpoints)
 
 	return l:debugger
+endfunction
+
+function! s:readProgramOutput(pipeName,line,readResult,debugger)
+	if 'err'==a:pipeName
+		let a:readResult.std.programOutput={'line':a:line}
+	endif
 endfunction
 
 function! s:readWhere(pipeName,line,readResult,debugger)
