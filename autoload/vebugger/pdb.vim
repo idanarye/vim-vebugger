@@ -8,6 +8,9 @@ function! vebugger#pdb#start(entryFile,args)
 				\'willPrintNext':{'expression':'','stage':0}
 				\}
 
+	call vebugger#std#openShellBuffer(l:debugger)
+
+	call l:debugger.addReadHandler(function('s:readProgramOutput'))
 	call l:debugger.addReadHandler(function('s:readWhere'))
 	call l:debugger.addReadHandler(function('s:readFinish'))
 	call l:debugger.addReadHandler(function('s:readEvaluatedExpressions'))
@@ -23,6 +26,24 @@ function! vebugger#pdb#start(entryFile,args)
 	call l:debugger.std_addAllBreakpointActions(g:vebugger_breakpoints)
 
 	return l:debugger
+endfunction
+
+function! s:readProgramOutput(pipeName,line,readResult,debugger) dict
+	if 'out'==a:pipeName
+		if a:line=~'\v^\>'
+					\||a:line=='--Return--'
+					\||a:line=='The program finished and will be restarted'
+			let self.programOutputMode=0
+		endif
+		if get(self,'programOutputMode')
+			let a:readResult.std.programOutput={'line':a:line}
+		endif
+		if a:line=~'\v^\(Pdb\) (n|s|r|cont)'
+			let self.programOutputMode=1
+		endif
+	else
+		let a:readResult.std.programOutput={'line':a:line}
+	endif
 endfunction
 
 function! s:readWhere(pipeName,line,readResult,debugger)
