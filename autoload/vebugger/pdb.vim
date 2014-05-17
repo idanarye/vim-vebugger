@@ -16,6 +16,7 @@ function! vebugger#pdb#start(entryFile,args)
 	call l:debugger.setWriteHandler('std','breakpoints',function('s:writeBreakpoints'))
 	call l:debugger.setWriteHandler('std','closeDebugger',function('s:closeDebugger'))
 	call l:debugger.setWriteHandler('std','evaluateExpressions',function('s:requestEvaluateExpression'))
+	call l:debugger.setWriteHandler('std','executeStatements',function('s:executeStatements'))
 	call l:debugger.setWriteHandler('std','removeAfterDisplayed',function('s:removeAfterDisplayed'))
 
 	call l:debugger.generateWriteActionsFromTemplate()
@@ -27,7 +28,12 @@ endfunction
 
 function! s:readProgramOutput(pipeName,line,readResult,debugger) dict
 	if 'out'==a:pipeName
+		if a:line=~"\\V\<C-[>[C" " After executing commands this seems to get appended...
+			let self.programOutputMode=1
+			return
+		endif
 		if a:line=~'\v^\>'
+					\||a:line=~'\V\^(Pdb)' "We don't want to print this particular line...
 					\||a:line=='--Return--'
 					\||a:line=='The program finished and will be restarted'
 			let self.programOutputMode=0
@@ -94,6 +100,14 @@ endfunction
 function! s:requestEvaluateExpression(writeAction,debugger)
 	for l:evalAction in a:writeAction
 		call a:debugger.writeLine('p '.l:evalAction.expression)
+	endfor
+endfunction
+
+function! s:executeStatements(writeAction,debugger)
+	for l:evalAction in a:writeAction
+		if has_key(l:evalAction,'statement')
+			call a:debugger.writeLine('!'.l:evalAction.statement)
+		endif
 	endfor
 endfunction
 
