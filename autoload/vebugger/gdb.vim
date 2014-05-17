@@ -6,11 +6,6 @@ function! vebugger#gdb#searchAndAttach(binaryFile)
 endfunction
 
 function! vebugger#gdb#start(binaryFile,args)
-	"let l:debugger=vebugger#std#startDebugger(
-				"\(has_key(a:args,'command')
-				"\? (a:args.command)
-				"\: 'gdb -i mi --silent '.fnameescape(a:binaryFile)))
-
 	let l:debugger=vebugger#std#startDebugger('gdb -i mi --silent '.fnameescape(a:binaryFile))
 	let l:debugger.state.gdb={}
 
@@ -22,7 +17,7 @@ function! vebugger#gdb#start(binaryFile,args)
 	if get(a:args,'pid') "Attach to process
 		call l:debugger.writeLine('attach '.string(a:args.pid))
 	else
-		call l:debugger.writeLine("set args 1>&2")
+		call l:debugger.writeLine('set args '.vebugger#util#commandLineArgsForProgram(a:args).' 1>&2')
 		call vebugger#std#openShellBuffer(l:debugger)
 		call l:debugger.writeLine('start')
 	end

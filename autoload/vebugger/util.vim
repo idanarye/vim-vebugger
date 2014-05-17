@@ -31,3 +31,23 @@ function! vebugger#util#selectProcessOfFile(ofFile)
 	let l:chosenLine=l:resultLines[l:chosenId]
 	return str2nr(matchlist(l:chosenLine,'\v^\s*\d+\)\s+(\d+)')[1])
 endfunction
+
+function! vebugger#util#commandLineArgsForProgram(debuggerArgs)
+	if has_key(a:debuggerArgs,'args')
+		if type(a:debuggerArgs.args)==type([])
+			return join(map(a:debuggerArgs.args,'s:argEscape(v:val)'),' ')
+		elseif type(a:debuggerArgs.args)==type('')
+			return a:debuggerArgs.args
+		else
+			return string(a:debuggerArgs.args)
+		endif
+	endif
+endfunction
+
+function! s:argEscape(arg)
+	if has('win32')
+		return shellescape(a:arg)
+	else
+		return '"'.escape(a:arg,'"').'"'
+	end
+endfunction

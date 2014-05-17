@@ -1,9 +1,6 @@
 function! vebugger#pdb#start(entryFile,args)
-	let l:debugger=vebugger#std#startDebugger(
-				\(has_key(a:args,'command')
-				\? (a:args.command)
-				\: 'python -m pdb')
-				\.' '.a:entryFile)
+	let l:debugger=vebugger#std#startDebugger('python -m pdb '.a:entryFile.' '.vebugger#util#commandLineArgsForProgram(a:args))
+
 	let l:debugger.state.pdb={
 				\'willPrintNext':{'expression':'','stage':0}
 				\}

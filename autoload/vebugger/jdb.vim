@@ -1,11 +1,5 @@
 function! vebugger#jdb#start(entryClass,args)
-	let l:debugger=vebugger#std#startDebugger(
-				\(has_key(a:args,'command')
-				\? (a:args.command)
-				\: 'jdb')
-				\.(has_key(a:args,'classpath')
-				\? ' -classpath '.fnameescape(a:args.classpath)
-				\: ''))
+	let l:debugger=vebugger#std#startDebugger('jdb'.(has_key(a:args,'classpath') ? ' -classpath '.fnameescape(a:args.classpath) : ''))
 	let l:debugger.state.jdb={}
 	if has_key(a:args,'srcpath')
 		let l:debugger.state.jdb.srcpath=a:args.srcpath
@@ -15,7 +9,7 @@ function! vebugger#jdb#start(entryClass,args)
 	let l:debugger.state.jdb.filesToClassesMap={}
 
 	call l:debugger.writeLine('stop on '.a:entryClass.'.main')
-	call l:debugger.writeLine('run '.a:entryClass)
+	call l:debugger.writeLine('run '.a:entryClass.' '.vebugger#util#commandLineArgsForProgram(a:args))
 	call l:debugger.writeLine('monitor where')
 
 	call l:debugger.addReadHandler(function('s:readWhere'))
