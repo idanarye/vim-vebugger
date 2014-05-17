@@ -15,6 +15,7 @@ function! vebugger#rdebug#start(entryFile,args)
 	call l:debugger.setWriteHandler('std','flow',function('s:writeFlow'))
 	call l:debugger.setWriteHandler('std','breakpoints',function('s:writeBreakpoints'))
 	call l:debugger.setWriteHandler('std','evaluateExpressions',function('s:requestEvaluateExpression'))
+	call l:debugger.setWriteHandler('std','executeStatements',function('s:executeStatements'))
 	call l:debugger.setWriteHandler('std','removeAfterDisplayed',function('s:removeAfterDisplayed'))
 
 	call l:debugger.generateWriteActionsFromTemplate()
@@ -71,6 +72,15 @@ endfunction
 function! s:requestEvaluateExpression(writeAction,debugger)
 	for l:evalAction in a:writeAction
 		call a:debugger.writeLine('display '.l:evalAction.expression)
+	endfor
+endfunction
+
+function! s:executeStatements(writeAction,debugger)
+	for l:evalAction in a:writeAction
+		if has_key(l:evalAction,'statement')
+			"rdebug uses Ruby functions for commands
+			call a:debugger.writeLine(l:evalAction.statement)
+		endif
 	endfor
 endfunction
 
