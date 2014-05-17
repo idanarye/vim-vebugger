@@ -1,9 +1,7 @@
 function! vebugger#pdb#start(entryFile,args)
 	let l:debugger=vebugger#std#startDebugger('python -m pdb '.a:entryFile.' '.vebugger#util#commandLineArgsForProgram(a:args))
 
-	let l:debugger.state.pdb={
-				\'willPrintNext':{'expression':'','stage':0}
-				\}
+	let l:debugger.state.pdb={}
 
 	call vebugger#std#openShellBuffer(l:debugger)
 
@@ -111,24 +109,19 @@ function! s:executeStatements(writeAction,debugger)
 	endfor
 endfunction
 
-function! s:readEvaluatedExpressions(pipeName,line,readResult,debugger)
+function! s:readEvaluatedExpressions(pipeName,line,readResult,debugger) dict
 	if 'out'==a:pipeName
-		if 1==a:debugger.state.pdb.willPrintNext.stage "Reading the empty line after the command
-			let a:debugger.state.pdb.willPrintNext.stage=2
-		elseif 2==a:debugger.state.pdb.willPrintNext.stage "Reading the actual value to print
-			let l:expression=a:debugger.state.pdb.willPrintNext.expression
+		if has_key(self,'expression') "Reading the actual value to print
 			let l:value=a:line
 			let a:readResult.std.evaluatedExpression={
-						\'expression':(l:expression),
+						\'expression':(self.expression),
 						\'value':(l:value)}
 			"Reset the state
-			let a:debugger.state.pdb.willPrintNext.expression=''
-			let a:debugger.state.pdb.willPrintNext.stage=0
-		else "Any other stage treated as 0
+			unlet self.expression
+		else "Check if the next line is the eval result
 			let l:matches=matchlist(a:line,'\v^\(Pdb\) p (.*)$')
 			if 1<len(l:matches)
-				let a:debugger.state.pdb.willPrintNext.expression=l:matches[1]
-				let a:debugger.state.pdb.willPrintNext.stage=1
+				let self.expression=l:matches[1]
 			endif
 		endif
 	endif
