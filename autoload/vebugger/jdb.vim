@@ -9,9 +9,11 @@ function! vebugger#jdb#start(entryClass,args)
 	let l:debugger.state.jdb.filesToClassesMap={}
 
 	call l:debugger.writeLine('stop on '.a:entryClass.'.main')
-	call l:debugger.writeLine('run '.a:entryClass.' '.vebugger#util#commandLineArgsForProgram(a:args))
+	call l:debugger.writeLine('run  '.a:entryClass.' '.vebugger#util#commandLineArgsForProgram(a:args))
 	call l:debugger.writeLine('monitor where')
+	call vebugger#std#openShellBuffer(l:debugger)
 
+	call l:debugger.addReadHandler(function('s:readProgramOutput'))
 	call l:debugger.addReadHandler(function('s:readWhere'))
 	call l:debugger.addReadHandler(function('s:readException'))
 	call l:debugger.addReadHandler(function('s:readEvaluatedExpressions'))
@@ -26,6 +28,29 @@ function! vebugger#jdb#start(entryClass,args)
 	call l:debugger.std_addAllBreakpointActions(g:vebugger_breakpoints)
 
 	return l:debugger
+endfunction
+
+function! s:readProgramOutput(pipeName,line,readResult,debugger) dict
+	if 'out'==a:pipeName
+		if a:line=~'\v^\> \>'
+					\||a:line=='> '
+					\||a:line=~'\v^Step completed'
+					\||a:line=~'\v^Breakpoint hit'
+					\||a:line=~'\v^\> Deferring breakpoint'
+					\||a:line=='Nothing suspended.'
+					\||a:line=~'\v^\> run  ' "Signs that the output finished
+			let self.programOutputMode=0
+		elseif a:line=~'\v(step|step up|next|cont)$' "Next line should be output
+			let self.programOutputMode=1
+		elseif a:line=~'\v^\> [^>]' "Start of output
+			let a:readResult.std.programOutput={'line':substitute(a:line,'\v^\> ','','')}
+			let self.programOutputMode=1
+		elseif get(self,'programOutputMode')
+			let a:readResult.std.programOutput={'line':a:line}
+		endif
+	else
+		let a:readResult.std.programOutput={'line':a:line}
+	endif
 endfunction
 
 function! s:findFolderFromStackTrace(src,nameFromStackTrace)
