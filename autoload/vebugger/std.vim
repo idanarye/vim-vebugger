@@ -81,7 +81,7 @@ function! vebugger#std#openShellBuffer(debugger)
 	endif
 	8 new
 	let b:debugger=a:debugger
-	autocmd BufDelete <buffer> call b:debugger.kill()
+	autocmd BufDelete <buffer> if exists('b:debugger') | call b:debugger.kill() | endif
 	setlocal buftype=nofile
 	setlocal bufhidden=wipe
 	let a:debugger.shellBuffer=bufnr('')
