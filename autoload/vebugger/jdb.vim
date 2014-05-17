@@ -19,6 +19,7 @@ function! vebugger#jdb#start(entryClass,args)
 	call l:debugger.setWriteHandler('std','flow',function('s:writeFlow'))
 	call l:debugger.setWriteHandler('std','breakpoints',function('s:writeBreakpoints'))
 	call l:debugger.setWriteHandler('std','evaluateExpressions',function('s:requestEvaluateExpression'))
+	call l:debugger.setWriteHandler('std','executeStatements',function('s:executeStatements'))
 
 	call l:debugger.generateWriteActionsFromTemplate()
 
@@ -114,6 +115,15 @@ endfunction
 function! s:requestEvaluateExpression(writeAction,debugger)
 	for l:evalAction in a:writeAction
 		call a:debugger.writeLine('eval '.l:evalAction.expression)
+	endfor
+endfunction
+
+function! s:executeStatements(writeAction,debugger)
+	for l:evalAction in a:writeAction
+		if has_key(l:evalAction,'statement')
+			"Use eval to run the statement - it works!
+			call a:debugger.writeLine('eval '.l:evalAction.statement)
+		endif
 	endfor
 endfunction
 
