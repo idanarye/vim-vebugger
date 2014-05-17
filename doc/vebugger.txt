@@ -1,0 +1,200 @@
+*vebugger.txt*
+
+
+Author:  Idan Arye <https://github.com/someboddy/>
+License: Same terms as Vim itself (see |license|)
+
+Version: 1.0.0
+
+INTRODUCTION                                                       *vebugger*
+
+Vebugger is yet another debugger frontend plugin for Vim, created because I
+wasn't happy with the other debugger plugins I found. Vebugger currently
+supports:
+* Tracking the currently executed command in the source code
+* Debugger flow commands - step-in, set-over, set-out and continue
+* Breakpoints management
+* Evaluating expressions in the current executed scope
+* Messing with the program's state(changing values, calling functions)
+
+Vebugger is built as a generic framework for building frontends for
+interactive shell debugger, and comes with implementations for:
+* GDB - doesn't need introdcution...
+* JDB - a Java debugger
+* PDB - a Python module for debugging Python scripts
+* RDebug - a Ruby command line option for debugging Ruby scripts
+Other implementations can be added with ease.
+
+Vebugger is built under the following assumptions:
+* While command line debuggers share enough in common to make the creation
+  of such a framework as Vebugger possible, the differences between them are
+  too great to be expressed with regular expression. To support them all at
+  least some code has to be written.
+* Unlike IDE users, Vim users tend to understand the tools the operate behind
+  the scenes. While Vebugger automates the common features, it allows you to
+  "open the hood" and interact with the debugger's shell directly so you could
+  utilize the full power of your debugger.
+* I have no intention to aim for the lowest common denominator. If one
+  debugger has a cool feature I want to support, I'll implement it even if the
+  other debuggers don't have it.
+
+
+CONFIGURATION                                        *vebugger-configuration*
+
+If you want to use the keymaps, you need to choose a leader for them by
+setting *g:vebugger_leader* in your vimrc.
+
+Example: >
+    let g:vebugger_leader='<Leader>d'
+<
+
+LAUNCHING DEBUGGERS                                      *vebugger-launching*
+
+A debugger's implementation is responsible for starting it. The standard is to
+have a "start" function that accepts two arguments: The file to launch(EXE
+file or main script file) and a dictionary of other arguments. There should
+also be a command for launching the debugger with more ease.
+
+
+LAUNCHING GDB                                                 *vebugger-gdb*
+
+GDB can be launched with *vebuger#gdb#start*
+>
+    call vebugger#gdb#start('a.out',{'args':['hello','world']})
+<
+
+The supported extra arguments are:
+* "args": Command line arguments for the debugged program
+* "pid": Process id to attach to
+You can't specify both "args" and "pid".
+
+GDB can also be launched with the *VBGstartGDB* command:
+>
+    VBGstartGDB a.out hello world
+<
+The *VBGattachGDB* command searches for processes launched from the EXE to
+attach to, and attaches to them:
+>
+   VBGattachGDB a.out
+<
+
+LAUNCHING JDB                                                 *vebugger-jdb*
+
+JDB is launched with *vebugger#jdb#start*
+>
+    call vebugger#jdb#start('Main',{
+        \'classpath':'classes',
+        \'srcpath':'src',
+        \'args':['hello','world']})
+<
+Unlike in the other debuggers, the first argument here is not the name of a
+file - it's the name of the class to run. The supported extra arguments are:
+* "args": Command line arguments for the debugged program
+* "classpath": Where to look for class files
+* "srcpath": Where to look for source files
+If you don't supply "classpath" and "srcpath", Vebugger will assume you are
+using the current directory for source files and class files.
+
+JDB does not have a command for starting it, since you usually want to supply
+"classpath" and "srcpath".
+
+
+LAUNCHING RDEBUG                                             *vebugger-rdebug*
+
+RDebug is launched with *vebugger#rdebug#start*
+>
+    call vebugger#rdebug#start('script.rb',{'args':['hello','world']})
+<
+The supported extra arguments are:
+* "args": Command line arguments for the debugged script
+
+RDebug can also be launched with the *VBGstartRDebug* command:
+>
+    VBGstartRDebug script.rb hello world
+<
+
+LAUNCHING PDB                                                  *vebugger-pdb*
+
+PDB is launched with *vebugger#pdb#start*
+>
+    call vebugger#pdb#start('script.py',{'args':['hello','world']})
+<
+The supported extra arguments are:
+* "args": Command line arguments for the debugged script
+
+PDB can also be launched with the *VBGstartPDB* command:
+>
+    VBGstartPDB script.py hello world
+<
+
+USING THE DEBUGGERS                        *vebugger-usage* *vebugger-commands*
+
+Once you have launched a debugger, you can use the following commands to
+interact with it:
+
+
+CONTROL THE EXECUTION OF THE PROGRAM              *vebugger-execution-control*
+
+*:VBGstepOver* Continue the execution, stopping at the next statement.
+*:VBGstepIn* Same as VBGstepOver but stepps into functions.
+*:VBGstepOut* Continue the execution until the end of the current function.
+*:VBGcontinue* Continue the execution.
+
+MANAGE BREAKPOINTS                                      *vebugger-breakpoints*
+
+*:VBGtoggleBreakpoint* Toggle a breakpoint. The file and line should be supplied as arguments.
+*:VBGtoggleBreakpointThisLine* Toggle a breakpoint for the current line.
+*:VBGclearBreakpints* Clear all breakpoints.
+
+EVALUATE EXPRESSIONS                                      *vebugger-evalutate*
+
+*:VBGeval* Evaluate and print the expression supplied as argument.
+*:VBGevalSelectedText* Evaluate and print the selected text.
+*:VBGevalWordUnderCursor* Evaluate the <cword> under the cursor
+
+EXECUTE STATEMENTS                                          *vebugger-execute*
+
+*:VBGexecute* Execute the statement supplied as argument.
+*:VBGexecuteSelectedText* Execute the selected text.
+
+TERMINATING THE DEBUGGER                                  *vebugger-terminate*
+
+*:VBGkill* Terminates the debugger
+
+OPENING THE HOOD                                      *vebugger-open-the-hood*
+
+You can open the hood and interact with the running debugger directly using
+the following commands:
+
+*:VBGtoggleTerminalBuffer* Opens a buffer that shows everything printed from
+the debugger interactive shell.
+*:VBGrawWrite* Sends a line supplied as argument to the debugger interactive shell.
+*:VBGrawWriteSelectedText* Sends the selected text to the debugger interactive
+shell.
+
+
+KEYMAPS                                                    *vebugger-keymaps*
+
+If you set|g:vebugger_leader| in your vimrc you'll get keymaps for the
+Vebugger commands. The keymaps all start with the leader you set, following
+with:
+
+i      |:VBGstepIn|
+o      |:VBGstepOver|
+O      |:VBGstepOut|
+c      |:VBGcontinue|
+
+b      |:VBGtoggleBreakpointThisLine|
+B      |:VBGclearBreakpints|
+
+e      |:VBGevalWordUnderCursor| in normal mode
+       |:VBGevalSelectedText| in select mode
+E      Prompt for an argument for |:VBGeval|
+
+x      |:VBGexecute| current line in normal mode.
+       |:VBGexecuteSelectedText| in select mode
+X      Prompt for an argument for |:VBGexecute|
+
+t      |:VBGtoggleTerminalBuffer|
+r      Select mode only - |:VBGrawWriteSelectedText|
+R      Prompt for an argument for |:VBGrawWrite|

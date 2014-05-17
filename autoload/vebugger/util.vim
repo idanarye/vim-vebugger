@@ -1,6 +1,7 @@
 
-"Shamefully stolen from http://stackoverflow.com/a/6271254/794380
+"Returns the visually selected text
 function! vebugger#util#get_visual_selection()
+	"Shamefully stolen from http://stackoverflow.com/a/6271254/794380
 	" Why is this not a built-in Vim script function?!
 	let [lnum1, col1] = getpos("'<")[1:2]
 	let [lnum2, col2] = getpos("'>")[1:2]
@@ -10,6 +11,8 @@ function! vebugger#util#get_visual_selection()
 	return join(lines, "\n")
 endfunction
 
+"Prompts the user with a filtered list of process, and returns the process id
+"the user selects
 function! vebugger#util#selectProcessOfFile(ofFile)
 	let l:fileName=fnamemodify(a:ofFile,':t')
 	let l:resultLines=split(vimproc#system('ps -o pid,user,comm,start,state,tt -C '.fnameescape(l:fileName)),'\r\n\|\n\|\r')
@@ -32,6 +35,8 @@ function! vebugger#util#selectProcessOfFile(ofFile)
 	return str2nr(matchlist(l:chosenLine,'\v^\s*\d+\)\s+(\d+)')[1])
 endfunction
 
+"Escape args(from a debugger's extra arguments) as a command line arguments
+"string
 function! vebugger#util#commandLineArgsForProgram(debuggerArgs)
 	if has_key(a:debuggerArgs,'args')
 		if type(a:debuggerArgs.args)==type([])
@@ -44,6 +49,7 @@ function! vebugger#util#commandLineArgsForProgram(debuggerArgs)
 	endif
 endfunction
 
+"Escape a single argument for the command line
 function! s:argEscape(arg)
 	if has('win32')
 		return shellescape(a:arg)

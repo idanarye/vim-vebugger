@@ -1,3 +1,4 @@
+"Read and return all new lines from a Vebugger pipe object.
 function! s:readNewLinesFromPipe(pipeObject)
 	"read
 	let l:text=a:pipeObject.pipe.read(1000,0)
@@ -19,6 +20,7 @@ endfunction
 
 let s:f_debugger={}
 
+"Terminate the debugger
 function! s:f_debugger.kill() dict
 	if self.shell.is_valid
 		call self.addLineToTerminal('','== DEBUGGER TERMINATED ==')
@@ -32,10 +34,12 @@ function! s:f_debugger.kill() dict
 	endif
 endfunction
 
+"Write a line to the debugger's interactive shell
 function! s:f_debugger.writeLine(line) dict
 	call self.shell.stdin.write(a:line."\n")
 endfunction
 
+"Check for new lines from the debugger's interactive shell and handle them
 function! s:f_debugger.invokeReading() dict
 	let l:newLines={}
 	for l:k in keys(self.pipes)
@@ -58,6 +62,7 @@ function! s:f_debugger.invokeReading() dict
 	call feedkeys("f\e") " Make sure the CursorHold event is refired even if the user does nothing
 endfunction
 
+"Handle a single line from the debugger's interactive shell
 function! s:f_debugger.handleLine(pipeName,line) dict
 	call self.addLineToTerminal(a:pipeName,a:line)
 
@@ -74,6 +79,7 @@ function! s:f_debugger.handleLine(pipeName,line) dict
 	call self.performWriteActions()
 endfunction
 
+"Perform all write actions
 function! s:f_debugger.performWriteActions() dict
 	for l:namespace in keys(self.writeActions)
 		let l:handlers=get(self.writeHandlers,l:namespace)
@@ -90,6 +96,8 @@ function! s:f_debugger.performWriteActions() dict
 	call self.generateWriteActionsFromTemplate()
 endfunction
 
+"Show the terminal buffer that gets it's content from the debugger's
+"interactive shell
 function! s:f_debugger.showTerminalBuffer() dict
 	if has_key(self,'terminalBuffer')
 		if -1<bufwinnr(self.terminalBuffer)
@@ -104,6 +112,7 @@ function! s:f_debugger.showTerminalBuffer() dict
 	wincmd p
 endfunction
 
+"Close the terminal buffer
 function! s:f_debugger.closeTerminalBuffer() dict
 	if has_key(self,'terminalBuffer')
 		if -1<bufwinnr(self.terminalBuffer)
@@ -115,6 +124,7 @@ function! s:f_debugger.closeTerminalBuffer() dict
 	endif
 endfunction
 
+"Check if the terminal buffer associated with this debugger is currently open
 function! s:f_debugger.isTerminalBufferOpen() dict
 	if has_key(self,'terminalBuffer')
 		if -1<bufwinnr(self.terminalBuffer)
@@ -124,6 +134,7 @@ function! s:f_debugger.isTerminalBufferOpen() dict
 	return 0
 endfunction
 
+"Turn on and off the terminal buffer associated with this debugger
 function! s:f_debugger.toggleTerminalBuffer() dict
 	if self.isTerminalBufferOpen()
 		call self.closeTerminalBuffer()
@@ -132,6 +143,7 @@ function! s:f_debugger.toggleTerminalBuffer() dict
 	endif
 endfunction
 
+"Write a line to the terminal buffer. This function does not process the line
 function! s:f_debugger.addLineToTerminal(pipeName,line) dict
 	if has_key(self,'terminalBuffer')
 		let l:bufwin=bufwinnr(self.terminalBuffer)
@@ -150,6 +162,7 @@ function! s:f_debugger.addLineToTerminal(pipeName,line) dict
 	endif
 endfunction
 
+"Add an handler to a handler list
 function! s:addHandler(list,handler)
 	if type(a:handler) == type({})
 		call add(a:list,a:handler)
@@ -158,6 +171,7 @@ function! s:addHandler(list,handler)
 	endif
 endfunction
 
+"Set a named handler in a handler dictionary
 function! s:setHandler(dict,namespace,name,handler)
 	if !has_key(a:dict,a:namespace)
 		let a:dict[a:namespace]={}
@@ -169,34 +183,51 @@ function! s:setHandler(dict,namespace,name,handler)
 	endif
 endfunction
 
+"Add a read handler. Read handlers process output from the debugger's
+"interactive shell and modify read result objects with structured information
+"parsed from those lines
 function! s:f_debugger.addReadHandler(handler) dict
 	call s:addHandler(self.readHandlers,a:handler)
 endfunction
 
+"Add a think handler. Think handlers are debugger agnostic - they look at
+"read result objects and decide what to do with them.
 function! s:f_debugger.addThinkHandler(handler) dict
 	call s:addHandler(self.thinkHandlers,a:handler)
 endfunction
 
+"Set a write handler. Write handlers get write action objects and convert them
+"to debugger specific commands. A write action can only handle a write action
+"of the namespace and name it is registered for, to prevent the same write
+"action handled by multiple write handlers.
 function! s:f_debugger.setWriteHandler(namespace,name,handler) dict
 	call s:setHandler(self.writeHandlers,a:namespace,a:name,a:handler)
 endfunction
 
+"Add a close handler. Close handlers are called when the debugger is closed to
+"tidy things up.
 function! s:f_debugger.addCloseHandler(handler) dict
 	call s:addHandler(self.closeHandlers,a:handler)
 endfunction
 
+"Create an empty write action that follows the write actions template. That
+"action will later be filled by think handlers or from outside.
 function! s:f_debugger.generateWriteActionsFromTemplate() dict
 	let self.writeActions=deepcopy(self.writeActionsTemplate)
 endfunction
 
+"Set a write action of a specific namespace and name, for write actions that
+"do not support a list
 function! s:f_debugger.setWriteAction(namespace,name,value) dict
 	let self.writeActions[a:namespace][a:name]=a:value
 endfunction
 
+"Add a write action of a specific namespace and name, for write actions that supports a list
 function! s:f_debugger.addWriteAction(namespace,name,value) dict
 	call add(self.writeActions[a:namespace][a:name],a:value)
 endfunction
 
+"Create a bare debugger object from a raw shell line
 function! vebugger#createDebugger(command)
 
 	let l:debugger=deepcopy(s:f_debugger)
@@ -225,8 +256,8 @@ function! vebugger#createDebugger(command)
 	return l:debugger
 endfunction
 
-" all the functions here are currently just for testing:
 
+"Create a debugger and set it as the currently active debugger
 function! vebugger#startDebugger(command)
 	call vebugger#killDebugger()
 
@@ -240,6 +271,7 @@ function! vebugger#startDebugger(command)
 	return s:debugger
 endfunction
 
+"Terminate the currently active debugger
 function! vebugger#killDebugger()
 	augroup vebugger_shell
 		autocmd!
@@ -251,24 +283,28 @@ function! vebugger#killDebugger()
 	endif
 endfunction
 
+"Write a line to the currently active debugger
 function! vebugger#writeLine(line)
 	if exists('s:debugger')
 		call s:debugger.writeLine(a:line)
 	endif
 endfunction
 
+"Invoke reading for the currently active debugger
 function! vebugger#invokeReading()
 	if exists('s:debugger')
 		call s:debugger.invokeReading()
 	endif
 endfunction
 
+"Toggle the terminal buffer for the currently active debugger
 function! vebugger#toggleTerminalBuffer()
 	if exists('s:debugger')
 		call s:debugger.toggleTerminalBuffer()
 	endif
 endfunction
 
+"Fetch the currently active debugger object
 function! vebugger#getActiveDebugger()
 	if exists('s:debugger')
 		return s:debugger
@@ -277,29 +313,34 @@ function! vebugger#getActiveDebugger()
 	endif
 endfunction
 
+"Set a write action for the currently active debugger
 function! vebugger#setWriteAction(namespace,name,value)
 	if exists('s:debugger')
 		call s:debugger.setWriteAction(a:namespace,a:name,a:value)
 	endif
 endfunction
 
+"Add a write action to the currently active debugger
 function! vebugger#addWriteAction(namespace,name,value)
 	if exists('s:debugger')
 		call s:debugger.addWriteAction(a:namespace,a:name,a:value)
 	endif
 endfunction
 
+"Force performing all the write of the currently active debugger
 function! vebugger#performWriteActions()
 	if exists('s:debugger')
 		call s:debugger.performWriteActions()
 	endif
 endfunction
 
+"Set a write action for the currently active debugger and perform it
 function! vebugger#setWriteActionAndPerform(namespace,name,value)
 	call vebugger#setWriteAction(a:namespace,a:name,a:value)
 	call vebugger#performWriteActions()
 endfunction
 
+"Add a write action to the currently active debugger and perform it
 function! vebugger#addWriteActionAndPerform(namespace,name,value)
 	call vebugger#addWriteAction(a:namespace,a:name,a:value)
 	call vebugger#performWriteActions()

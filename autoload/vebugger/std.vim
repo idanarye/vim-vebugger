@@ -1,5 +1,6 @@
 let g:vebugger_breakpoints=[]
 
+"Initialize the std part of the debugger's state
 function! vebugger#std#setStandardState(debugger)
 	let a:debugger.state.std={
 				\'config':{
@@ -9,6 +10,7 @@ function! vebugger#std#setStandardState(debugger)
 				\'evaluateExpressions':[]}
 endfunction
 
+"Initialize the std part of the debugger's read result template
 function! vebugger#std#setStandardReadResultTemplate(debugger)
 	let a:debugger.readResultTemplate.std={
 				\'programOutput':{},
@@ -19,6 +21,7 @@ function! vebugger#std#setStandardReadResultTemplate(debugger)
 				\'exception':{}}
 endfunction
 
+"Initialize the std part of the debugger's write actions template
 function! vebugger#std#setStandardWriteactionsTemplate(debugger)
 	let a:debugger.writeActionsTemplate.std={
 				\'flow':'',
@@ -29,24 +32,28 @@ function! vebugger#std#setStandardWriteactionsTemplate(debugger)
 				\'closeDebugger':''}
 endfunction
 
+"Adds the std_ functions to the debugger object
 function! vebugger#std#addStandardFunctions(debugger)
 	for l:k in keys(s:standardFunctions)
 		let a:debugger['std_'.l:k]=s:standardFunctions[l:k]
 	endfor
 endfunction
 
+"Add the standard think handlers to the debugger
 function! vebugger#std#addStandardThinkHandlers(debugger)
 	for l:ThinkHandler in values(s:standardThinkHandlers)
 		call a:debugger.addThinkHandler(l:ThinkHandler)
 	endfor
 endfunction
 
+"Add the standard close handlers to the debugger
 function! vebugger#std#addStandardCloseHandlers(debugger)
 	for l:CloseHandler in values(s:standardCloseHandlers)
 		call a:debugger.addCloseHandler(l:CloseHandler)
 	endfor
 endfunction
 
+"Performs the standard initialization of the debugger object
 function! vebugger#std#standardInit(debugger)
 	call vebugger#std#setStandardState(a:debugger)
 	call vebugger#std#setStandardReadResultTemplate(a:debugger)
@@ -56,6 +63,7 @@ function! vebugger#std#standardInit(debugger)
 	call vebugger#std#addStandardCloseHandlers(a:debugger)
 endfunction
 
+"Start a debugger with the std settings
 function! vebugger#std#startDebugger(command)
 	let l:debugger=vebugger#startDebugger(a:command)
 
@@ -65,6 +73,10 @@ function! vebugger#std#startDebugger(command)
 endfunction
 
 
+"Opens the shell buffer for a debugger. The shell buffer displays the output
+"of the debugged program, and when it's closed the debugger gets terminated.
+"Shell buffers should not be used when attaching a debugger to a running
+"process.
 function! vebugger#std#openShellBuffer(debugger)
 	if has_key(a:debugger,'shellBuffer')
 		if -1<bufwinnr(a:debugger.shellBuffer)
@@ -90,6 +102,8 @@ function! vebugger#std#openShellBuffer(debugger)
 endfunction
 
 let s:standardFunctions={}
+
+"Write a line to the shell buffer
 function! s:standardFunctions.addLineToShellBuffer(line) dict
 	if has_key(self,'shellBuffer')
 		let l:bufwin=bufwinnr(self.shellBuffer)
@@ -102,6 +116,7 @@ function! s:standardFunctions.addLineToShellBuffer(line) dict
 	endif
 endfunction
 
+"Set the write actions to add all breakpoints registered in Vebugger
 function! s:standardFunctions.addAllBreakpointActions(breakpoints) dict
 	for l:breakpoint in a:breakpoints
 		call self.addWriteAction('std','breakpoints',{
@@ -111,6 +126,7 @@ function! s:standardFunctions.addAllBreakpointActions(breakpoints) dict
 	endfor
 endfunction
 
+"Make the debugger evaluate an expression
 function! s:standardFunctions.eval(expression) dict
 	if -1==index(self.state.std.evaluateExpressions,a:expression)
 		call add(self.state.std.evaluateExpressions,a:expression)
@@ -120,14 +136,17 @@ function! s:standardFunctions.eval(expression) dict
 	call self.performWriteActions()
 endfunction
 
-"Executes a statement in the debugged program
+"Execute a statement in the debugged program
 function! s:standardFunctions.execute(statement) dict
 	call self.addWriteAction('std','executeStatements',{
 				\'statement':(a:statement)})
 	call self.performWriteActions()
 endfunction
 
+
 let s:standardThinkHandlers={}
+
+"Update the shell buffer with program output
 function! s:standardThinkHandlers.addProgramOutputToShell(readResult,debugger) dict
 	let l:programOutput=a:readResult.std.programOutput
 	if !empty(l:programOutput)
@@ -135,6 +154,7 @@ function! s:standardThinkHandlers.addProgramOutputToShell(readResult,debugger) d
 	endif
 endfunction
 
+"Make Vim jump to the currently executed line
 function! s:standardThinkHandlers.moveToCurrentLine(readResult,debugger) dict
 	if !empty(a:readResult.std.location)
 		if !empty(a:debugger.state.std.config.externalFileStop_flowCommand) " Do we need to worry about stopping at external files?
@@ -157,6 +177,7 @@ function! s:standardThinkHandlers.moveToCurrentLine(readResult,debugger) dict
 	endif
 endfunction
 
+"Update the call stack
 function! s:standardThinkHandlers.updateCallStack(readResult,debugger) dict
 	let l:callstack=a:readResult.std.callstack
 	if !empty(l:callstack)
@@ -172,6 +193,7 @@ function! s:standardThinkHandlers.updateCallStack(readResult,debugger) dict
 	endif
 endfunction
 
+"Print an expression that it's evaluation was previously requested
 function! s:standardThinkHandlers.printEvaluatedExpression(readResult,debugger) dict
 	let l:evaluatedExpression=a:readResult.std.evaluatedExpression
 	if !empty(l:evaluatedExpression)
@@ -189,12 +211,15 @@ function! s:standardThinkHandlers.printEvaluatedExpression(readResult,debugger) 
 	endif
 endfunction
 
+"Close the debugger when the program is finished but the debugger wasn't
+"closed automatically
 function! s:standardThinkHandlers.closeDebuggerWhenProgramFinishes(readResult,debugger) dict
 	if !empty(a:readResult.std.programFinish)
 		call a:debugger.setWriteAction('std','closeDebugger','close')
 	endif
 endfunction
 
+"Print an exception message
 function! s:standardThinkHandlers.printException(readResult,debugger) dict
 	if !empty(a:readResult.std.exception)
 		echohl WarningMsg
@@ -204,6 +229,7 @@ function! s:standardThinkHandlers.printException(readResult,debugger) dict
 endfunction
 
 let s:standardCloseHandlers={}
+"Remove the currently executed line when a debugger is closed
 function! s:standardCloseHandlers.removeCurrentMarker(debugger) dict
 	let a:debugger.state.std.location={}
 	sign unplace 1
@@ -211,6 +237,8 @@ endfunction
 
 sign define vebugger_current text=->
 sign define vebugger_breakpoint text=** linehl=ColorColumn
+
+"Update all the marks(currently executed line and breakpoints) for a file
 function! vebugger#std#updateMarksForFile(state,filename)
 	let l:filename=fnamemodify(a:filename,":p")
 	if bufexists(l:filename)
@@ -232,6 +260,7 @@ function! vebugger#std#updateMarksForFile(state,filename)
 	endif
 endfunction
 
+"Toggle a breakpoint on and off
 function! vebugger#std#toggleBreakpoint(file,line)
 	let l:debugger=vebugger#getActiveDebugger()
 	let l:debuggerState=empty(l:debugger)
@@ -257,6 +286,7 @@ function! vebugger#std#toggleBreakpoint(file,line)
 	call vebugger#std#updateMarksForFile(l:debuggerState,a:file)
 endfunction
 
+"Clear all breakpoints
 function! vebugger#std#clearBreakpoints()
 	let l:debugger=vebugger#getActiveDebugger()
 	let l:debuggerState=empty(l:debugger) ? {} : l:debugger.state
@@ -274,6 +304,7 @@ function! vebugger#std#clearBreakpoints()
 	endfor
 endfunction
 
+"Ask the active debugger to evaluate an expression
 function! vebugger#std#eval(expression)
 	let l:debugger=vebugger#getActiveDebugger()
 	if !empty(l:debugger) && !empty(l:debugger.std_eval)
@@ -281,6 +312,7 @@ function! vebugger#std#eval(expression)
 	endif
 endfunction
 
+"Ask the active debugger to execute a statement
 function! vebugger#std#execute(statement)
 	let l:debugger=vebugger#getActiveDebugger()
 	if !empty(l:debugger) && !empty(l:debugger.std_eval)
