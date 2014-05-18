@@ -23,7 +23,8 @@ interactive shell debugger, and comes with implementations for:
 * JDB - a Java debugger
 * PDB - a Python module for debugging Python scripts
 * RDebug - a Ruby command line option for debugging Ruby scripts
-Other implementations can be added with ease.
+Other implementations can be added with ease, and I will accept pull requests
+that add such implementations as long as they use Vim's |license|.
 
 Vebugger is built under the following assumptions:
 * While command line debuggers share enough in common to make the creation
@@ -37,6 +38,24 @@ Vebugger is built under the following assumptions:
 * I have no intention to aim for the lowest common denominator. If one
   debugger has a cool feature I want to support, I'll implement it even if the
   other debuggers don't have it.
+
+Vebugger is developed under Linux. I'll try it under Windows once I feel like
+setting a Windows development environment, and fix what needs to be fixed to
+make it work there. I have neither plans nor means to support OSX, but I will
+accept pull requests that add OSX support.
+
+
+REQUIREMENTS                                         *vebugger-requirements*
+
+Vebugger requires the vimproc plugin, obtainable from:
+https://github.com/Shougo/vimproc.vim
+Notice that vimproc needs to be built - there are instructions in the GitHub
+page.
+
+In order for Vebugger to use a debugger, that debugger must be installed and
+it's executable must be in the PATH. In case of RDebug and PDB, which are used
+from the Ruby and Python modules, the interpreter("ruby" or "python") is the
+one that must be installed and in the path.
 
 
 CONFIGURATION                                        *vebugger-configuration*
@@ -54,6 +73,11 @@ A debugger's implementation is responsible for starting it. The standard is to
 have a "start" function that accepts two arguments: The file to launch(EXE
 file or main script file) and a dictionary of other arguments. There should
 also be a command for launching the debugger with more ease.
+
+It should go without saying that you can't debug an executable that's not
+debuggable with the debugger you use, and you won't get meaningful results if
+you try to debug binary/bytecode files that were compiled without debugging
+information(usually the "-g" flag).
 
 
 LAUNCHING GDB                                                 *vebugger-gdb*
@@ -198,3 +222,181 @@ X      Prompt for an argument for |:VBGexecute|
 t      |:VBGtoggleTerminalBuffer|
 r      Select mode only - |:VBGrawWriteSelectedText|
 R      Prompt for an argument for |:VBGrawWrite|
+
+
+ARCHITECTURE                                         *vebugger-architecture*
+
+Vebugger architecture is a combination of the Pipeline architecture and the
+Message Bus architecture. Vebugger reads lines from the debugger's interactive
+shell and creates a read result object. The read handlers look at each line
+and populate the read result object. Think handlers look at the read result
+and decide what to do with it. They can interact with the user by operate Vim
+directly, or they can create write action object. Write handlers look at those
+write action objects and write to the debugger's interactive shell's stdin.
+
+This architecture allows flexibility and code reuse.  Read and Write handlers
+interact with the debugger's interactive shell so they must be debugger
+specific, but think handlers use read result and write action objects so they
+don't care about the specific debugger. If Vebugger does not support
+some feature for some debugger(either because the debugger doesn't support it
+or because it's not implemented in Vebugger for this specific debugger) the
+think handler can stay and no harm will be done. The read result objects won't
+be created so the think handler simply won't get them, and if the think
+handler creates a write action object it'll get ignored because there is no
+write handler that can handle it for this specific debugger. The think handle
+won't crash a debugger that doesn't support it - it'll simply be ignored.
+
+READ RESULT OBJECTS             *vebugger-architecture-read-result-objects*
+
+Whenever Vebugger reads a line from the debugger's interactive shell, it
+creates a read result object. The read result object does not contain the raw
+line - it contains a structure that will be filled with the information parsed
+from that raw line by the read handlers.
+
+The read result object starts with a structure defined in the debugger
+object's "readResultTemplate" field, which is deep copied to create read
+result objects.  The direct fields of the read result objects are actually
+namespaces. Vebugger only defines the "std" namespace, and plugins built on
+top of Vebugger can define a namespaced named after the plugin to contain
+their own read results.  A debugger frontend implementation can also define
+it's own namespace, but this has limited usage as these implementations
+usually don't define think handlers.
+
+READ HANDLERS                        *vebugger-architecture-read-handlers*
+
+Read handlers are responsible for parsing the raw lines from the debugger's
+interactive shell and populating the read result object with the data they
+gathered from that line. Each read handler should focus on single type of
+output(e.g. current executed line, output from the debugged program, variable
+value) and ignore any line that doesn't have that data.
+
+Read handlers are added with the "addReadHandler" method of the debugger object.
+That method accepts a VimScript function and creates an object with the
+function as it's "handle" method. Alternatively, that object can be created
+and passed to the "addReadHandler" method. This architecture means that if a
+read handler is declared as a |Dictionary-function| it can utilize the handler
+object's state.
+
+A read handler accepts 4 arguments:
+1)      A string with the name of the pipe the line came from("out" or "err")
+2)      A string with the line itself
+3)      The read result object that was created for the line
+4)      The debugger object
+The read handler function should fill the read result object with information
+from that line. It should not make assumptions about other read handlers that
+parsed that line before or will parse that line after and fill the same read
+result objects.
+
+If a read handler needs to parse multiline output, it should use the handler
+object's state to store information between calls, and only fill the read
+result object once it reads the last line.
+
+THINK HANDLERS                      *vebugger-architecture-think-handlers*
+
+Think handlers are responsible for operating on the data they get from read
+handlers. Think handlers can operate Vim to display data to the user, or
+operate the debugger itself(via write actions). Each think handler should have
+a single responsibility(e.g. jumping and marking the current executed line,
+printing data previously requested by the user) and only operate when the read
+result object have the data it needs.
+
+Think handlers are added with the "addThinkHandler" method of the debugger object.
+That method accepts a VimScript function and creates an object with the
+function as it's "handle" method. Alternatively, that object can be created
+and passed to the "addThinkHandler" method. This architecture means that if a
+think handler is declared as a |Dictionary-function| it can utilize the handler
+object's state.
+
+A think handler accepts 2 arguments:
+1)      A read result object
+2)      The debugger object
+
+A think handler interacts with Vim directly, but it should only interact with
+the debugger's interactive shell via write actions.
+
+WRITE ACTIONS OBJECTS           *vebugger-architecture-write-actions-objects*
+
+A write action is an abstract command to the debugger, that will be converted
+to the specific debugger's syntax in the write handlers. A write action can be
+created in the think handlers or from the outside. A write actions object can
+contain multiple write actions. When the object gets executed, write handlers
+handle all the write actions inside it and the write actions object is
+replaced by a new one.
+
+The write actions object starts with a structure defined in the debugger
+object's "writeActionsTemplate" field, which is deep copied to create write
+actions objects.  The direct fields of the write actions objects are actually
+namespaces.  Vebugger only defines the "std" namespace, and plugins built on
+top of Vebugger can define a namespaced named after the plugin to contain
+their own write actions.  A debugger frontend implementation can also define
+it's own namespace.  The fields of these namespaces are the names of the write
+actions themselves.  Each write action can either be a list or a dictionary.
+This structure is important since it defines the execution of the write
+handlers.
+
+Each write action in the write actions object can be a dictionary or a list,
+depending on whether multiple actions can be executed in the same time. For
+example, a flow control action is a dictionary(you can't do step-in and
+step-out at the same time) but a breakpoint management action is a list(you
+can set multiple breakpoints in the same time).
+
+Write actions are created with the setWriteAction(for dictionary type actions)
+and addWriteAction(for list type actions) methods of the debugger object. Both
+methods accept three parameters: a namespace, a name, and the action's
+value(usually a dictionary).
+
+WRITE HANDLERS                      *vebugger-architecture-write-handlers*
+
+Write handlers are responsible for writing commands to the debugger's
+interactive shell. Unlike think handlers, which get a whole read result object
+and ignore what they don't need, write handlers have one-to-one relationship with
+write actions. A write handler will only get the write action it is registered
+for, will not be executed if that write action is empty, and only one write
+handler can be registered for each write action(namespace+name)
+
+Write handlers are added with the "setWriteAction" method of the debugger
+object, which accepts 3 arguments: a namespace, a name, and a VimScript
+function and creates an object with the function as it's "handle" method.
+Alternatively, that object can be created and passed as the third argument for
+the "setWriteAction" method. This architecture means that if a write handler
+is declared as a |Dictionary-function| it can utilize the handler object's
+state.
+
+A write handler accepts 2 arguments:
+1)      A single write action(usually object or dictionary)
+2)      The debugger object
+A write handler uses the "writeLine" method of the debugger object to write
+lines to the debugger.
+
+CLOSE HANDLERS                      *vebugger-architecture-close-handlers*
+
+Close handlers are called once the debugger is closed - either it closes
+itself or the process is killed. Close handlers can be used to tidy things up.
+For example there is a standard close handler that unmarks the currently
+executed line.
+
+Close handlers are added with the "addCloseHandler" method of the debugger object.
+That method accepts a VimScript function and creates an object with the
+function as it's "handle" method. Alternatively, that object can be created
+and passed to the "addCloseHandler" method. This architecture means that if a
+close handler is declared as a |Dictionary-function| it can utilize the handler
+object's state. This is done for consistency with the other types of handlers.
+The usefulness of this mechanism for close handlers is limited since they are
+only called once and have no use for storing state.
+
+A close handler accepts a single argument - The debugger object.
+
+DEBUGGER STATE                     *vebugger-architecture-debugger-state*
+
+The debugger object, which is passed as an argument to all handlers, has a
+"state" field that can be used for storing data and configuration. This is
+mostly useful for think handlers, but other handlers may use it as well(for
+example, the JDB read handlers use a configuration field with the source path
+to convert the JDB output(that uses class names instead of file names) to
+actual paths).
+
+The direct fields of the "state" field are actually namespaces. Vebugger
+defines the "std" namespace, and plugins built on top of Vebugger can define a
+namespaced named after the plugin to contain their own read results.  A
+debugger frontend implementation can also define it's own namespace for
+storing debugger-specific data and configuration.
