@@ -124,13 +124,8 @@ endfunction
 function! s:executeStatements(writeAction,debugger)
 	for l:evalAction in a:writeAction
 		if has_key(l:evalAction,'statement')
-			let l:statement=l:evalAction.statement
-			let l:statement=substitute(l:statement,'\v;\s*$','','') "remove trailing `;`
-			if l:statement=~'\v^[^(]+\=.+'
-				call a:debugger.writeLine('set '.l:statement)
-			else
-				call a:debugger.writeLine('call '.l:statement)
-			endif
+			"Use eval to run the statement - but first we need to remove the ;
+			call a:debugger.writeLine('print '.substitute(l:evalAction.statement,'\v;\s*$','',''))
 		endif
 	endfor
 endfunction
