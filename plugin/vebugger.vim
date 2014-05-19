@@ -9,7 +9,7 @@ command! -nargs=0 VBGstepOut call vebugger#setWriteActionAndPerform('std','flow'
 command! -nargs=0 VBGcontinue call vebugger#setWriteActionAndPerform('std','flow','continue')
 
 command! -nargs=0 VBGtoggleTerminalBuffer call vebugger#toggleTerminalBuffer()
-command! -nargs=+ VBGtoggleBreakpoint call vebugger#std#toggleBreakpoint(<f-args>)
+command! -nargs=+ -complete=file VBGtoggleBreakpoint call vebugger#std#toggleBreakpoint(<f-args>)
 command! -nargs=0 VBGtoggleBreakpointThisLine call vebugger#std#toggleBreakpoint(expand('%:~:.'),line('.'))
 command! -nargs=0 VBGclearBreakpints call vebugger#std#clearBreakpoints()
 
