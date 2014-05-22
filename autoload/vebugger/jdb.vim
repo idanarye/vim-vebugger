@@ -11,7 +11,9 @@ function! vebugger#jdb#start(entryClass,args)
 	call l:debugger.writeLine('stop on '.a:entryClass.'.main')
 	call l:debugger.writeLine('run  '.a:entryClass.' '.vebugger#util#commandLineArgsForProgram(a:args))
 	call l:debugger.writeLine('monitor where')
-	call vebugger#std#openShellBuffer(l:debugger)
+	if !has('win32')
+		call vebugger#std#openShellBuffer(l:debugger)
+	endif
 
 	call l:debugger.addReadHandler(function('s:readProgramOutput'))
 	call l:debugger.addReadHandler(function('s:readWhere'))

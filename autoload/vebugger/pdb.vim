@@ -3,7 +3,9 @@ function! vebugger#pdb#start(entryFile,args)
 
 	let l:debugger.state.pdb={}
 
-	call vebugger#std#openShellBuffer(l:debugger)
+	if !has('win32')
+		call vebugger#std#openShellBuffer(l:debugger)
+	endif
 
 	call l:debugger.addReadHandler(function('s:readProgramOutput'))
 	call l:debugger.addReadHandler(function('s:readWhere'))

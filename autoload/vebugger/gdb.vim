@@ -18,7 +18,9 @@ function! vebugger#gdb#start(binaryFile,args)
 		call l:debugger.writeLine('attach '.string(a:args.pid))
 	else
 		call l:debugger.writeLine('set args '.vebugger#util#commandLineArgsForProgram(a:args).' 1>&2')
-		call vebugger#std#openShellBuffer(l:debugger)
+		if !has('win32')
+			call vebugger#std#openShellBuffer(l:debugger)
+		endif
 		call l:debugger.writeLine('start')
 	end
 

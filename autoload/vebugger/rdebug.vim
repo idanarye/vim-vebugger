@@ -6,7 +6,9 @@ function! vebugger#rdebug#start(entryFile,args)
 
 	call l:debugger.writeLine("$stdout=$stderr")
 	let l:debugger.pipes.err.annotation = "err&prg\t\t"
-	call vebugger#std#openShellBuffer(l:debugger)
+	if !has('win32')
+		call vebugger#std#openShellBuffer(l:debugger)
+	endif
 
 	call l:debugger.addReadHandler(function('s:readProgramOutput'))
 	call l:debugger.addReadHandler(function('s:readWhere'))
