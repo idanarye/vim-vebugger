@@ -57,3 +57,14 @@ function! s:argEscape(arg)
 		return '"'.escape(a:arg,'"').'"'
 	end
 endfunction
+
+"Return a tool's(usually debugger) full path, or revert to default if that
+"path is not defined
+function! vebugger#util#getToolFullPath(toolName,default)
+	let l:optionName='vebugger_path_'.a:toolName
+	if exists('g:'.l:optionName)
+		return g:[l:optionName]
+	else
+		return a:default
+	endif
+endfunction
