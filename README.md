@@ -18,6 +18,7 @@ interactive shell debugger, and comes with implementations for:
 
  * GDB - doesn't need introdcution...
  * JDB - a Java debugger
+ * Mdbg - a .NET debugger(Windows only)
  * PDB - a Python module for debugging Python scripts
  * RDebug - a Ruby command line option for debugging Ruby scripts
 
