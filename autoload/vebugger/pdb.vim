@@ -1,9 +1,12 @@
 function! vebugger#pdb#start(entryFile,args)
-	let l:debugger=vebugger#std#startDebugger('python -m pdb '.a:entryFile.' '.vebugger#util#commandLineArgsForProgram(a:args))
+	let l:debugger=vebugger#std#startDebugger(shellescape(vebugger#util#getToolFullPath('python','python'))
+				\.' -m pdb '.a:entryFile.' '.vebugger#util#commandLineArgsForProgram(a:args))
 
 	let l:debugger.state.pdb={}
 
-	call vebugger#std#openShellBuffer(l:debugger)
+	if !has('win32')
+		call vebugger#std#openShellBuffer(l:debugger)
+	endif
 
 	call l:debugger.addReadHandler(function('s:readProgramOutput'))
 	call l:debugger.addReadHandler(function('s:readWhere'))

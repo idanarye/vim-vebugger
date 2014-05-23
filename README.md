@@ -18,6 +18,7 @@ interactive shell debugger, and comes with implementations for:
 
  * GDB - doesn't need introdcution...
  * JDB - a Java debugger
+ * Mdbg - a .NET debugger(Windows only)
  * PDB - a Python module for debugging Python scripts
  * RDebug - a Ruby command line option for debugging Ruby scripts
 
@@ -38,10 +39,14 @@ Vebugger is built under the following assumptions:
    debugger has a cool feature I want to support, I'll implement it even if the
    other debuggers don't have it.
 
-Vebugger is developed under Linux. I'll try it under Windows once I feel like
-setting a Windows development environment, and fix what needs to be fixed to
-make it work there. I have neither plans nor means to support OSX, but I will
-accept pull requests that add OSX support.
+Vebugger is developed under Linux. It doesn't work properly under Windows due
+to lack of PTY support. I have neither plans nor means to support OSX, but I
+will accept pull requests that add OSX support.
+
+The features that don't work under windows are:
+
+ * RDebug.
+ * Displaying output from the debugged program.
 
 REQUIREMENTS
 ============
@@ -51,7 +56,8 @@ https://github.com/Shougo/vimproc.vim.  Notice that vimproc needs to be built -
 there are instructions in the GitHub page.
 
 In order for Vebugger to use a debugger, that debugger must be installed and
-it's executable must be in the PATH. In case of RDebug and PDB, which are used
+it's executable must be either be in the PATH or set with a global variable
+(see `help vebugger-configuration`). In case of RDebug and PDB, which are used
 from the Ruby and Python modules, the interpreter(`ruby` or `python`) is the
 one that must be installed and in the path.
 

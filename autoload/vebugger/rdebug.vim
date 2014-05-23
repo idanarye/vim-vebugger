@@ -1,12 +1,15 @@
 function! vebugger#rdebug#start(entryFile,args)
-	let l:debugger=vebugger#std#startDebugger('ruby -rdebug '.a:entryFile.' '.vebugger#util#commandLineArgsForProgram(a:args))
+	let l:debugger=vebugger#std#startDebugger(shellescape(vebugger#util#getToolFullPath('ruby','ruby'))
+				\.' -rdebug '.a:entryFile.' '.vebugger#util#commandLineArgsForProgram(a:args))
 	let l:debugger.state.rdebug={}
 	let l:debugger.state.std.config.externalFileStop_flowCommand='stepover' "skip external modules
 
 
 	call l:debugger.writeLine("$stdout=$stderr")
 	let l:debugger.pipes.err.annotation = "err&prg\t\t"
-	call vebugger#std#openShellBuffer(l:debugger)
+	if !has('win32')
+		call vebugger#std#openShellBuffer(l:debugger)
+	endif
 
 	call l:debugger.addReadHandler(function('s:readProgramOutput'))
 	call l:debugger.addReadHandler(function('s:readWhere'))

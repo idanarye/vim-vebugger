@@ -4,7 +4,7 @@
 Author:  Idan Arye <https://github.com/someboddy/>
 License: Same terms as Vim itself (see |license|)
 
-Version: 1.0.0
+Version: 1.1.0
 
 INTRODUCTION                                                       *vebugger*
 
@@ -21,6 +21,7 @@ Vebugger is built as a generic framework for building frontends for
 interactive shell debugger, and comes with implementations for:
 * GDB - doesn't need introdcution...
 * JDB - a Java debugger
+* Mdbg - a .NET debugger(Windows only)
 * PDB - a Python module for debugging Python scripts
 * RDebug - a Ruby command line option for debugging Ruby scripts
 Other implementations can be added with ease, and I will accept pull requests
@@ -39,10 +40,14 @@ Vebugger is built under the following assumptions:
   debugger has a cool feature I want to support, I'll implement it even if the
   other debuggers don't have it.
 
-Vebugger is developed under Linux. I'll try it under Windows once I feel like
-setting a Windows development environment, and fix what needs to be fixed to
-make it work there. I have neither plans nor means to support OSX, but I will
-accept pull requests that add OSX support.
+Vebugger is developed under Linux. It doesn't work properly under Windows due
+to lack of PTY support. I have neither plans nor means to support OSX, but I
+will accept pull requests that add OSX support.
+
+The features that don't work under windows are:
+
+* RDebug.
+* Displaying output from the debugged program.
 
 
 REQUIREMENTS                                         *vebugger-requirements*
@@ -53,9 +58,10 @@ Notice that vimproc needs to be built - there are instructions in the GitHub
 page.
 
 In order for Vebugger to use a debugger, that debugger must be installed and
-it's executable must be in the PATH. In case of RDebug and PDB, which are used
-from the Ruby and Python modules, the interpreter("ruby" or "python") is the
-one that must be installed and in the path.
+it's executable must either be in the PATH or set with a global variable (see
+|vebugger-configuration|). In case of RDebug and PDB, which are used from the
+Ruby and Python modules, the interpreter("ruby" or "python") is the one that
+must be installed and in the path.
 
 
 CONFIGURATION                                        *vebugger-configuration*
@@ -66,6 +72,18 @@ setting *g:vebugger_leader* in your vimrc.
 Example: >
     let g:vebugger_leader='<Leader>d'
 <
+
+If a debugger is not in the PATH you can set the direct path to it by setting
+g:vebugger_path_XXX, where XXX is the executable used for the debugger:
+
+*g:vebugger_path_gdb*       defaults to "gdb"
+*g:vebugger_path_jdb*       defaults to "jdb"
+*g:vebugger_path_mdbg*      defaults to "Mdbg.exe"
+*g:vebugger_path_python*    defaults to "python"
+*g:vebugger_path_ruby*      defaults to "ruby"
+
+Notice that for PDB and RDebug you use "python" and "ruby", since the debugger
+is actually a module bundled in the interpreter.
 
 LAUNCHING DEBUGGERS                                      *vebugger-launching*
 
@@ -150,6 +168,38 @@ PDB can also be launched with the *VBGstartPDB* command:
 >
     VBGstartPDB script.py hello world
 <
+
+LAUNCHING MDBG                                                *vebugger-mdbg*
+
+Mdbg is launched with *vebugger#mdbg#start*
+>
+    call vebugger#mdbg#start('App.exe',{
+        \'srcpath':'src',
+        \'args':['hello','world']})
+<
+
+The supported extra arguments are:
+* "srcpath": Where to look for source files
+* "noConsole": If non-zero, do not open a console for the debugged program
+* "args": Command line arguments for the debugged program
+* "pid": Process id to attach to
+If you specify "pid", you can't specify "args" and/or "noConsole".
+
+If you don't supply "srcpath", Vebugger will assume you are
+using the current directory for source files.
+
+Mdbg does not have a command for starting it, since you usually want to supply
+"srcpath".
+
+You can also search for a process with *vebugger#mdbg#searchAndAttach*
+>
+    call vebugger#mdbg#searchAndAttach('App.exe','src')
+<
+Here the first argument is the executable and the second is the source files
+directory. This will display a list of available processes to attach to.
+Notice that unlike GDB, you need "src" here since Mdbg doesn't display full
+source file paths.
+
 
 USING THE DEBUGGERS                        *vebugger-usage* *vebugger-commands*
 
