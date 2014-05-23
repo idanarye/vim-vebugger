@@ -56,7 +56,8 @@ https://github.com/Shougo/vimproc.vim.  Notice that vimproc needs to be built -
 there are instructions in the GitHub page.
 
 In order for Vebugger to use a debugger, that debugger must be installed and
-it's executable must be in the PATH. In case of RDebug and PDB, which are used
+it's executable must be either be in the PATH or set with a global variable
+(see `help vebugger-configuration`). In case of RDebug and PDB, which are used
 from the Ruby and Python modules, the interpreter(`ruby` or `python`) is the
 one that must be installed and in the path.
 

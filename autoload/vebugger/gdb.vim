@@ -6,7 +6,8 @@ function! vebugger#gdb#searchAndAttach(binaryFile)
 endfunction
 
 function! vebugger#gdb#start(binaryFile,args)
-	let l:debugger=vebugger#std#startDebugger('gdb -i mi --silent '.fnameescape(a:binaryFile))
+	let l:debugger=vebugger#std#startDebugger(shellescape(vebugger#util#getToolFullPath('gdb','gdb'))
+				\.' -i mi --silent '.fnameescape(a:binaryFile))
 	let l:debugger.state.gdb={}
 
 

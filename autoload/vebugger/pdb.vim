@@ -1,5 +1,6 @@
 function! vebugger#pdb#start(entryFile,args)
-	let l:debugger=vebugger#std#startDebugger('python -m pdb '.a:entryFile.' '.vebugger#util#commandLineArgsForProgram(a:args))
+	let l:debugger=vebugger#std#startDebugger(shellescape(vebugger#util#getToolFullPath('python','python'))
+				\.' -m pdb '.a:entryFile.' '.vebugger#util#commandLineArgsForProgram(a:args))
 
 	let l:debugger.state.pdb={}
 

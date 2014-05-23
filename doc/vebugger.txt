@@ -58,9 +58,10 @@ Notice that vimproc needs to be built - there are instructions in the GitHub
 page.
 
 In order for Vebugger to use a debugger, that debugger must be installed and
-it's executable must be in the PATH. In case of RDebug and PDB, which are used
-from the Ruby and Python modules, the interpreter("ruby" or "python") is the
-one that must be installed and in the path.
+it's executable must either be in the PATH or set with a global variable (see
+|vebugger-configuration|). In case of RDebug and PDB, which are used from the
+Ruby and Python modules, the interpreter("ruby" or "python") is the one that
+must be installed and in the path.
 
 
 CONFIGURATION                                        *vebugger-configuration*
@@ -71,6 +72,18 @@ setting *g:vebugger_leader* in your vimrc.
 Example: >
     let g:vebugger_leader='<Leader>d'
 <
+
+If a debugger is not in the PATH you can set the direct path to it by setting
+g:vebugger_path_XXX, where XXX is the executable used for the debugger:
+
+*g:vebugger_path_gdb*       defaults to "gdb"
+*g:vebugger_path_jdb*       defaults to "jdb"
+*g:vebugger_path_mdbg*      defaults to "Mdbg.exe"
+*g:vebugger_path_python*    defaults to "python"
+*g:vebugger_path_ruby*      defaults to "ruby"
+
+Notice that for PDB and RDebug you use "python" and "ruby", since the debugger
+is actually a module bundled in the interpreter.
 
 LAUNCHING DEBUGGERS                                      *vebugger-launching*
 
