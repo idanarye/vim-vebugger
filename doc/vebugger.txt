@@ -1,7 +1,7 @@
 *vebugger.txt*
 
 
-Author:  Idan Arye <https://github.com/someboddy/>
+Author:  Idan Arye <https://github.com/idanarye/>
 License: Same terms as Vim itself (see |license|)
 
 Version: 1.1.0
