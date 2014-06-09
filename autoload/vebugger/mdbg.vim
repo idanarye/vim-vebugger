@@ -53,6 +53,9 @@ function! vebugger#mdbg#start(binaryFile,args)
 endfunction
 
 function! s:findFilePath(src,fileName,methodName)
+	if vebugger#util#isPathAbsolute(a:filename)
+		return fnamemodify(a:filename,':p') "Return the normalized full path
+	endif
 	let l:path=fnamemodify(a:src,':p')
 	let l:files=glob(l:path.'**/'.a:fileName,0,1)
 	for l:dirname in split(a:methodName,'\.')
