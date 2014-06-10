@@ -53,8 +53,8 @@ function! vebugger#mdbg#start(binaryFile,args)
 endfunction
 
 function! s:findFilePath(src,fileName,methodName)
-	if vebugger#util#isPathAbsolute(a:filename)
-		return fnamemodify(a:filename,':p') "Return the normalized full path
+	if vebugger#util#isPathAbsolute(a:fileName)
+		return fnamemodify(a:fileName,':p') "Return the normalized full path
 	endif
 	let l:path=fnamemodify(a:src,':p')
 	let l:files=glob(l:path.'**/'.a:fileName,0,1)
@@ -76,7 +76,7 @@ endfunction
 
 function! s:readWhere(pipeName,line,readResult,debugger)
 	if 'out'==a:pipeName
-		let l:matches=matchlist(a:line,'\v^\*(\d+)\.\s*([A-Za-z_.]+)\s*\(([A-Za-z_.]+):(\d+)\)')
+		let l:matches=matchlist(a:line,'\v^\*(\d+)\.\s*([A-Za-z_.]+)\s*\((.+):(\d+)\)')
 		if 3<len(l:matches)
 			let l:frameNumber=str2nr(l:matches[1])
 			let l:file=s:findFilePath(a:debugger.state.mdbg.srcpath,l:matches[3],l:matches[2])
