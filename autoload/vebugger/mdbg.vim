@@ -6,7 +6,7 @@ function! vebugger#mdbg#searchAndAttach(binaryFile,srcpath)
 endfunction
 
 function! vebugger#mdbg#start(binaryFile,args)
-	let l:debugger=vebugger#std#startDebugger(shellescape(vebugger#util#getToolFullPath('mdbg','Mdbg.exe')))
+	let l:debugger=vebugger#std#startDebugger(shellescape(vebugger#util#getToolFullPath('mdbg','Mdbg')))
 	let l:debugger.state.mdbg={'breakpointNumbers':{}}
 	let l:debugger.readResultTemplate.mdbg={'breakpointBound':{}}
 
