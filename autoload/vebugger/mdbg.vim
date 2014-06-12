@@ -146,7 +146,8 @@ function! s:breakpointAdded(readResult,debugger)
 	if !empty(a:readResult.mdbg.breakpointBound)
 		let l:breakpointBound=a:readResult.mdbg.breakpointBound
 		let l:lookFor=l:breakpointBound.fileNameTail.':'.l:breakpointBound.line
-		let l:matchingKeys=filter(keys(a:debugger.state.mdbg.breakpointNumbers),'fnamemodify(v:val,":t")==l:lookFor')
+		let l:lookForRegex='\V'.escape(l:lookFor,'\').'\$'
+		let l:matchingKeys=filter(keys(a:debugger.state.mdbg.breakpointNumbers),'v:val=~l:lookForRegex')
 		for l:key in l:matchingKeys
 			if empty(a:debugger.state.mdbg.breakpointNumbers[l:key])
 				let a:debugger.state.mdbg.breakpointNumbers[l:key]={'number':l:breakpointBound.breakpointNumber}
