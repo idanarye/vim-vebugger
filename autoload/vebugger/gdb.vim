@@ -22,7 +22,13 @@ function! vebugger#gdb#start(binaryFile,args)
 		if !has('win32')
 			call vebugger#std#openShellBuffer(l:debugger)
 		endif
-		call l:debugger.writeLine('start')
+
+		if has_key(a:args,'entry')
+			call l:debugger.writeLine('tbreak '.a:args.entry)
+			call l:debugger.writeLine('run')
+		else
+			call l:debugger.writeLine('start')
+		endif
 	end
 
 
@@ -66,8 +72,7 @@ endfunction
 
 function! s:readWhere(pipeName,line,readResult,debugger)
 	if 'out'==a:pipeName
-		"let l:matches=matchlist(a:line,'\v#(\d+)\s+(\S+)\s+\(.*\)\s+at\s+([^:]+):(\d+)')
-		let l:matches=matchlist(a:line,'\v^\~"#(\d+)\s+(\S+)\s+\(.*\)\s+at\s+([^:]+):(\d+)')
+		let l:matches=matchlist(a:line,'\v^\~"#(\d+)\s+(.+)\s+\(.*\)\s+at\s+([^:]+):(\d+)')
 		if 4<len(l:matches)
 			let l:file=l:matches[3]
 			let l:file=fnamemodify(l:file,':~:.')

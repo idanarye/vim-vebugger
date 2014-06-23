@@ -25,6 +25,7 @@ command! -nargs=+ -complete=file VBGstartGDB call vebugger#gdb#start([<f-args>][
 command! -nargs=1 -complete=file VBGattachGDB call vebugger#gdb#searchAndAttach(<q-args>)
 command! -nargs=+ -complete=file VBGstartRDebug call vebugger#rdebug#start([<f-args>][0],{'args':[<f-args>][1:]})
 command! -nargs=+ -complete=file VBGstartPDB call vebugger#pdb#start([<f-args>][0],{'args':[<f-args>][1:]})
+command! -nargs=+ -complete=file VBGstartGDBForD call vebugger#gdb#start([<f-args>][0],{'args':[<f-args>][1:],'entry':'_Dmain'})
 
 if exists('g:vebugger_leader')
 	if !empty(g:vebugger_leader)

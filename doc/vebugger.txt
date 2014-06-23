@@ -4,7 +4,7 @@
 Author:  Idan Arye <https://github.com/idanarye/>
 License: Same terms as Vim itself (see |license|)
 
-Version: 1.1.2
+Version: 1.1.2 +
 
 INTRODUCTION                                                       *vebugger*
 
@@ -108,7 +108,8 @@ GDB can be launched with *vebuger#gdb#start*
 The supported extra arguments are:
 * "args": Command line arguments for the debugged program
 * "pid": Process id to attach to
-You can't specify both "args" and "pid".
+* "entry": The entry
+You can't specify both ("args" and/or "entry") and "pid".
 
 GDB can also be launched with the *VBGstartGDB* command:
 >
@@ -119,6 +120,8 @@ attach to, and attaches to them:
 >
    VBGattachGDB a.out
 <
+The *VBGstartGDBForD* command is the same as VBGstartGDB but for Dlang
+programs.
 
 LAUNCHING JDB                                                 *vebugger-jdb*
 
