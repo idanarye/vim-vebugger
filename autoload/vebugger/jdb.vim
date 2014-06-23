@@ -1,5 +1,5 @@
 function! vebugger#jdb#start(entryClass,args)
-	let l:debugger=vebugger#std#startDebugger(shellescape(vebugger#util#getToolFullPath('jdb','jdb'))
+	let l:debugger=vebugger#std#startDebugger(shellescape(vebugger#util#getToolFullPath('jdb',get(a:args,'version'),'jdb'))
 				\.(has_key(a:args,'classpath') ? ' -classpath '.fnameescape(a:args.classpath) : ''))
 	let l:debugger.state.jdb={}
 	if has_key(a:args,'srcpath')

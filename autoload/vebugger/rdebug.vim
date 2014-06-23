@@ -1,5 +1,5 @@
 function! vebugger#rdebug#start(entryFile,args)
-	let l:debugger=vebugger#std#startDebugger(shellescape(vebugger#util#getToolFullPath('ruby','ruby'))
+	let l:debugger=vebugger#std#startDebugger(shellescape(vebugger#util#getToolFullPath('ruby',get(a:args,'version'),'ruby'))
 				\.' -rdebug '.a:entryFile.' '.vebugger#util#commandLineArgsForProgram(a:args))
 	let l:debugger.state.rdebug={}
 	let l:debugger.state.std.config.externalFileStop_flowCommand='stepover' "skip external modules

@@ -86,12 +86,23 @@ endfunction
 
 "Return a tool's(usually debugger) full path, or revert to default if that
 "path is not defined
-function! vebugger#util#getToolFullPath(toolName,default)
+function! vebugger#util#getToolFullPath(toolName,version,default)
 	let l:optionName='vebugger_path_'.a:toolName
+	if !empty(a:version)
+		let l:optionName=l:optionName.'_'.a:version
+	endif
 	if exists('g:'.l:optionName)
 		return g:[l:optionName]
 	else
-		return a:default
+		if type({})==type(a:default)
+			if !empty(a:version) && has_key(a:default,a:version)
+				return a:default[a:version]
+			else
+				return a:default[' ']
+			endif
+		else
+			return a:default
+		endif
 	endif
 endfunction
 

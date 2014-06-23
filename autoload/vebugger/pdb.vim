@@ -1,5 +1,9 @@
 function! vebugger#pdb#start(entryFile,args)
-	let l:debugger=vebugger#std#startDebugger(shellescape(vebugger#util#getToolFullPath('python','python'))
+	let l:debuggerExe=vebugger#util#getToolFullPath('python',get(a:args,'version'),{
+				\' ':'python',
+				\'2':'python2',
+				\'3':'python3'})
+	let l:debugger=vebugger#std#startDebugger(shellescape(l:debuggerExe)
 				\.' -m pdb '.a:entryFile.' '.vebugger#util#commandLineArgsForProgram(a:args))
 
 	let l:debugger.state.pdb={}

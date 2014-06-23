@@ -85,6 +85,15 @@ g:vebugger_path_XXX, where XXX is the executable used for the debugger:
 Notice that for PDB and RDebug you use "python" and "ruby", since the debugger
 is actually a module bundled in the interpreter.
 
+You can set multiple versions for each debugger, by appending the version name
+to the debugger name with "_". These versions will be used when the "version"
+argument is supplied when running the debugger:
+
+*g:vebugger_path_python_2*  defaults to "python2"
+*g:vebugger_path_python_3*  defaults to "python3"
+*g:vebugger_path_mdbg_32*  No default - use it for the 32bit version of Mdbg
+*g:vebugger_path_mdbg_64*  No default - use it for the 64bit version of Mdbg
+
 LAUNCHING DEBUGGERS                                      *vebugger-launching*
 
 A debugger's implementation is responsible for starting it. The standard is to
@@ -108,7 +117,8 @@ GDB can be launched with *vebuger#gdb#start*
 The supported extra arguments are:
 * "args": Command line arguments for the debugged program
 * "pid": Process id to attach to
-* "entry": The entry
+* "entry": The entry point for starting the debugging(default "main")
+* "version": The version of the debugger to run
 You can't specify both ("args" and/or "entry") and "pid".
 
 GDB can also be launched with the *VBGstartGDB* command:
@@ -137,6 +147,7 @@ file - it's the name of the class to run. The supported extra arguments are:
 * "args": Command line arguments for the debugged program
 * "classpath": Where to look for class files
 * "srcpath": Where to look for source files
+* "version": The version of the debugger to run
 If you don't supply "classpath" and "srcpath", Vebugger will assume you are
 using the current directory for source files and class files.
 
@@ -152,6 +163,7 @@ RDebug is launched with *vebugger#rdebug#start*
 <
 The supported extra arguments are:
 * "args": Command line arguments for the debugged script
+* "version": The version of the debugger to run
 
 RDebug can also be launched with the *VBGstartRDebug* command:
 >
@@ -166,10 +178,17 @@ PDB is launched with *vebugger#pdb#start*
 <
 The supported extra arguments are:
 * "args": Command line arguments for the debugged script
+* "version": The version of the debugger to run
 
 PDB can also be launched with the *VBGstartPDB* command:
 >
     VBGstartPDB script.py hello world
+<
+
+There are also commands to specify if you want to use python2 or python3:
+>
+    VBGstartPDB2 script.py hello world
+    VBGstartPDB3 script.py hello world
 <
 
 LAUNCHING MDBG                                                *vebugger-mdbg*
@@ -186,6 +205,7 @@ The supported extra arguments are:
 * "noConsole": If non-zero, do not open a console for the debugged program
 * "args": Command line arguments for the debugged program
 * "pid": Process id to attach to
+* "version": The version of the debugger to run
 If you specify "pid", you can't specify "args" and/or "noConsole".
 
 If you don't supply "srcpath", Vebugger will assume you are
