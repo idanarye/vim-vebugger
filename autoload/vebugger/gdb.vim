@@ -72,21 +72,14 @@ endfunction
 
 function! s:readWhere(pipeName,line,readResult,debugger)
 	if 'out'==a:pipeName
-		let l:matches=matchlist(a:line,'\v^\~"#(\d+)\s+(.+)\s+\(.*\)\s+at\s+([^:]+):(\d+)')
-		if 4<len(l:matches)
-			let l:file=l:matches[3]
+		"let l:matches=matchlist(a:line,'\v^\~"#(\d+)\s+(.+)\s+\(.*\)\s+at\s+([^:]+):(\d+)')
+		let l:matches=matchlist(a:line,'\v^\*stopped.*fullname\=\"([^"]+)\",line\=\"(\d+)"')
+		if 2<len(l:matches)
+			let l:file=l:matches[1]
 			let l:file=fnamemodify(l:file,':~:.')
-			let l:frameNumber=str2nr(l:matches[1])
-			if 0==l:frameNumber " first stackframe is the current location
-				let a:readResult.std.location={
-							\'file':(l:file),
-							\'line':str2nr(l:matches[4])}
-			endif
-			let a:readResult.std.callstack={
-						\'clearOld':('0'==l:frameNumber),
-						\'add':'after',
+			let a:readResult.std.location={
 						\'file':(l:file),
-						\'line':str2nr(l:matches[4])}
+						\'line':str2nr(l:matches[2])}
 		endif
 	endif
 endfunction
