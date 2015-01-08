@@ -109,7 +109,7 @@ information(usually the "-g" flag).
 
 LAUNCHING GDB                                                 *vebugger-gdb*
 
-GDB can be launched with *vebuger#gdb#start*
+GDB can be launched with *vebugger#gdb#start*
 >
     call vebugger#gdb#start('a.out',{'args':['hello','world']})
 <
