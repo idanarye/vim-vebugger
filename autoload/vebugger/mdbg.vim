@@ -26,11 +26,13 @@ function! vebugger#mdbg#start(binaryFile,args)
 		if !get(a:args,'noConsole')
 			call l:debugger.writeLine('mode nc on')
 		endif
-		call l:debugger.writeLine('run '.shellescape(fnamemodify(a:binaryFile,':p')).' '.vebugger#util#commandLineArgsForProgram(a:args))
+		if has('win32unix')
+			call l:debugger.writeLine('run '.(substitute(system('cygpath -am '.shellescape(fnamemodify(a:binaryFile,':p'))),'\n$','','')).' '.vebugger#util#commandLineArgsForProgram(a:args))
+		else
+			call l:debugger.writeLine('run '.shellescape(fnamemodify(a:binaryFile,':p')).' '.vebugger#util#commandLineArgsForProgram(a:args))
+		endif
 		call l:debugger.writeLine('where')
 	end
-
-
 	call l:debugger.addReadHandler(function('s:readProgramOutput'))
 	call l:debugger.addReadHandler(function('s:readWhere'))
 	call l:debugger.addReadHandler(function('s:readFinish'))
@@ -53,11 +55,16 @@ function! vebugger#mdbg#start(binaryFile,args)
 endfunction
 
 function! s:findFilePath(src,fileName,methodName)
-	if vebugger#util#isPathAbsolute(a:fileName)
-		return fnamemodify(a:fileName,':p') "Return the normalized full path
+	if has('win32unix')
+		let l:fileName = substitute(system('cygpath -au "'.a:fileName.'"'),'\n$','','')
+	else
+		let l:fileName = a:fileName
+	endif
+	if vebugger#util#isPathAbsolute(l:fileName)
+		return fnamemodify(l:fileName,':p') "Return the normalized full path
 	endif
 	let l:path=fnamemodify(a:src,':p')
-	let l:files=glob(l:path.'**/'.a:fileName,0,1)
+	let l:files=glob(l:path.'**/'.l:fileName,0,1)
 	for l:dirname in split(a:methodName,'\.')
 		if empty(l:files)
 			return ''
