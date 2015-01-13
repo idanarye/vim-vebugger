@@ -26,11 +26,7 @@ function! vebugger#mdbg#start(binaryFile,args)
 		if !get(a:args,'noConsole')
 			call l:debugger.writeLine('mode nc on')
 		endif
-		if has('win32unix')
-			call l:debugger.writeLine('run '.(substitute(system('cygpath -am '.shellescape(fnamemodify(a:binaryFile,':p'))),'\n$','','')).' '.vebugger#util#commandLineArgsForProgram(a:args))
-		else
-			call l:debugger.writeLine('run '.shellescape(fnamemodify(a:binaryFile,':p')).' '.vebugger#util#commandLineArgsForProgram(a:args))
-		endif
+		call l:debugger.writeLine('run "'.s:pathToMdbgStyle(fnamemodify(a:binaryFile, ':p')).'" '.vebugger#util#commandLineArgsForProgram(a:args))
 		call l:debugger.writeLine('where')
 	end
 	call l:debugger.addReadHandler(function('s:readProgramOutput'))
@@ -54,12 +50,24 @@ function! vebugger#mdbg#start(binaryFile,args)
 	return l:debugger
 endfunction
 
+function! s:pathToMdbgStyle(path)
+    if has('win32unix')
+	return substitute(system('cygpath -w '.shellescape(a:path)),'\n$','','')
+    else
+	return a:path
+    endif
+endfunction
+
+function! s:pathToVimStyle(path)
+    if has('win32unix')
+	return substitute(system('cygpath -u '.shellescape(a:path)),'\n$','','')
+    else
+	return a:path
+    endif
+endfunction
+
 function! s:findFilePath(src,fileName,methodName)
-	if has('win32unix')
-		let l:fileName = substitute(system('cygpath -au "'.a:fileName.'"'),'\n$','','')
-	else
-		let l:fileName = a:fileName
-	endif
+	let l:fileName = s:pathToVimStyle(a:fileName)
 	if vebugger#util#isPathAbsolute(l:fileName)
 		return fnamemodify(l:fileName,':p') "Return the normalized full path
 	endif
@@ -128,8 +136,8 @@ function! s:writeBreakpoints(writeAction,debugger)
 	for l:breakpoint in a:writeAction
 		let l:fullFileName=fnamemodify(l:breakpoint.file,':p')
 		if 'add'==(l:breakpoint.action)
-			call a:debugger.writeLine('break '.fnameescape(l:fullFileName).':'.l:breakpoint.line)
-			let a:debugger.state.mdbg.breakpointNumbers[l:fullFileName.':'.l:breakpoint.line]={}
+			call a:debugger.writeLine('break '.s:pathToMdbgStyle(l:fullFileName).':'.l:breakpoint.line)
+			let a:debugger.state.mdbg.breakpointNumbers[s:pathToVimStyle(l:fullFileName).':'.l:breakpoint.line]={}
 		elseif 'remove'==l:breakpoint.action
 			call a:debugger.writeLine('delete '.a:debugger.state.mdbg.breakpointNumbers[l:fullFileName.':'.l:breakpoint.line].number)
 			call remove(a:debugger.state.mdbg.breakpointNumbers,l:fullFileName.':'.l:breakpoint.line)
@@ -142,7 +150,7 @@ function! s:readBreakpointBound(pipeName,line,readResult,debugger)
 		let l:matches=matchlist(a:line,'\vBreakpoint \#(\d+) bound\s*\(line (\d+) in ([^)]+)\)')
 		if 3<len(l:matches)
 			let a:readResult.mdbg.breakpointBound={
-						\'fileNameTail':l:matches[3],
+						\'fileNameTail':s:pathToVimStyle(l:matches[3]),
 						\'line':l:matches[2],
 						\'breakpointNumber':l:matches[1]}
 		endif
