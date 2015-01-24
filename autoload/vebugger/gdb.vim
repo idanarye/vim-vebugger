@@ -32,16 +32,16 @@ function! vebugger#gdb#start(binaryFile,args)
 	end
 
 
-	call l:debugger.addReadHandler(function('s:readProgramOutput'))
-	call l:debugger.addReadHandler(function('s:readWhere'))
-	call l:debugger.addReadHandler(function('s:readFinish'))
-	call l:debugger.addReadHandler(function('s:readEvaluatedExpressions'))
+	call l:debugger.addReadHandler(function('vebugger#gdb#_readProgramOutput'))
+	call l:debugger.addReadHandler(function('vebugger#gdb#_readWhere'))
+	call l:debugger.addReadHandler(function('vebugger#gdb#_readFinish'))
+	call l:debugger.addReadHandler(function('vebugger#gdb#_readEvaluatedExpressions'))
 
-	call l:debugger.setWriteHandler('std','flow',function('s:writeFlow'))
-	call l:debugger.setWriteHandler('std','breakpoints',function('s:writeBreakpoints'))
-	call l:debugger.setWriteHandler('std','closeDebugger',function('s:closeDebugger'))
-	call l:debugger.setWriteHandler('std','evaluateExpressions',function('s:requestEvaluateExpression'))
-	call l:debugger.setWriteHandler('std','executeStatements',function('s:executeStatements'))
+	call l:debugger.setWriteHandler('std','flow',function('vebugger#gdb#_writeFlow'))
+	call l:debugger.setWriteHandler('std','breakpoints',function('vebugger#gdb#_writeBreakpoints'))
+	call l:debugger.setWriteHandler('std','closeDebugger',function('vebugger#gdb#_closeDebugger'))
+	call l:debugger.setWriteHandler('std','evaluateExpressions',function('vebugger#gdb#_requestEvaluateExpression'))
+	call l:debugger.setWriteHandler('std','executeStatements',function('vebugger#gdb#_executeStatements'))
 
 	call l:debugger.generateWriteActionsFromTemplate()
 
@@ -62,7 +62,7 @@ function! s:findFolderFromStackTrace(src,nameFromStackTrace)
 	return l:path
 endfunction
 
-function! s:readProgramOutput(pipeName,line,readResult,debugger)
+function! vebugger#gdb#_readProgramOutput(pipeName,line,readResult,debugger)
 	if 'err'==a:pipeName
 				\&&a:line!~'\v^[=~*&^]'
 				\&&a:line!~'\V(gdb)'
@@ -70,7 +70,7 @@ function! s:readProgramOutput(pipeName,line,readResult,debugger)
 	endif
 endfunction
 
-function! s:readWhere(pipeName,line,readResult,debugger)
+function! vebugger#gdb#_readWhere(pipeName,line,readResult,debugger)
 	if 'out'==a:pipeName
 		"let l:matches=matchlist(a:line,'\v^\~"#(\d+)\s+(.+)\s+\(.*\)\s+at\s+([^:]+):(\d+)')
 		let l:matches=matchlist(a:line,'\v^\*stopped.*fullname\=\"([^"]+)\",line\=\"(\d+)"')
@@ -84,13 +84,13 @@ function! s:readWhere(pipeName,line,readResult,debugger)
 	endif
 endfunction
 
-function! s:readFinish(pipeName,line,readResult,debugger)
+function! vebugger#gdb#_readFinish(pipeName,line,readResult,debugger)
 	if a:line=~'\c\V\^~"[Inferior \.\*exited normally]'
 		let a:readResult.std.programFinish={'finish':1}
 	endif
 endfunction
 
-function! s:writeFlow(writeAction,debugger)
+function! vebugger#gdb#_writeFlow(writeAction,debugger)
 	if 'stepin'==a:writeAction
 		call a:debugger.writeLine('step')
 	elseif 'stepover'==a:writeAction
@@ -102,11 +102,11 @@ function! s:writeFlow(writeAction,debugger)
 	endif
 endfunction
 
-function! s:closeDebugger(writeAction,debugger)
+function! vebugger#gdb#_closeDebugger(writeAction,debugger)
 	call a:debugger.writeLine('quit')
 endfunction
 
-function! s:writeBreakpoints(writeAction,debugger)
+function! vebugger#gdb#_writeBreakpoints(writeAction,debugger)
 	for l:breakpoint in a:writeAction
 		if 'add'==(l:breakpoint.action)
 			call a:debugger.writeLine('break '.fnameescape(l:breakpoint.file).':'.l:breakpoint.line)
@@ -116,13 +116,13 @@ function! s:writeBreakpoints(writeAction,debugger)
 	endfor
 endfunction
 
-function! s:requestEvaluateExpression(writeAction,debugger)
+function! vebugger#gdb#_requestEvaluateExpression(writeAction,debugger)
 	for l:evalAction in a:writeAction
 		call a:debugger.writeLine('print '.l:evalAction.expression)
 	endfor
 endfunction
 
-function! s:executeStatements(writeAction,debugger)
+function! vebugger#gdb#_executeStatements(writeAction,debugger)
 	for l:evalAction in a:writeAction
 		if has_key(l:evalAction,'statement')
 			"Use eval to run the statement - but first we need to remove the ;
@@ -131,7 +131,7 @@ function! s:executeStatements(writeAction,debugger)
 	endfor
 endfunction
 
-function! s:readEvaluatedExpressions(pipeName,line,readResult,debugger) dict
+function! vebugger#gdb#_readEvaluatedExpressions(pipeName,line,readResult,debugger) dict
 	if 'out'==a:pipeName
 		if has_key(self,'nextExpressionToBePrinted')
 			let l:matches=matchlist(a:line,'\v^\~"\$(\d+) \= (.*)"$')

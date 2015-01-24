@@ -29,19 +29,19 @@ function! vebugger#mdbg#start(binaryFile,args)
 	call l:debugger.writeLine('run "'.s:pathToMdbgStyle(fnamemodify(a:binaryFile, ':p')).'" '.vebugger#util#commandLineArgsForProgram(a:args))
 	call l:debugger.writeLine('where')
     end
-    call l:debugger.addReadHandler(function('s:readProgramOutput'))
-    call l:debugger.addReadHandler(function('s:readWhere'))
-    call l:debugger.addReadHandler(function('s:readFinish'))
-    call l:debugger.addReadHandler(function('s:readEvaluatedExpressions'))
-    call l:debugger.addReadHandler(function('s:readBreakpointBound'))
+    call l:debugger.addReadHandler(function('vebugger#mdbg#_readProgramOutput'))
+    call l:debugger.addReadHandler(function('vebugger#mdbg#_readWhere'))
+    call l:debugger.addReadHandler(function('vebugger#mdbg#_readFinish'))
+    call l:debugger.addReadHandler(function('vebugger#mdbg#_readEvaluatedExpressions'))
+    call l:debugger.addReadHandler(function('vebugger#mdbg#_readBreakpointBound'))
 
     call l:debugger.addThinkHandler(function('s:breakpointAdded'))
 
-    call l:debugger.setWriteHandler('std','flow',function('s:writeFlow'))
-    call l:debugger.setWriteHandler('std','breakpoints',function('s:writeBreakpoints'))
-    call l:debugger.setWriteHandler('std','closeDebugger',function('s:closeDebugger'))
-    call l:debugger.setWriteHandler('std','evaluateExpressions',function('s:requestEvaluateExpression'))
-    call l:debugger.setWriteHandler('std','executeStatements',function('s:executeStatements'))
+    call l:debugger.setWriteHandler('std','flow',function('vebugger#mdbg#_writeFlow'))
+    call l:debugger.setWriteHandler('std','breakpoints',function('vebugger#mdbg#_writeBreakpoints'))
+    call l:debugger.setWriteHandler('std','closeDebugger',function('vebugger#mdbg#_closeDebugger'))
+    call l:debugger.setWriteHandler('std','evaluateExpressions',function('vebugger#mdbg#_requestEvaluateExpression'))
+    call l:debugger.setWriteHandler('std','executeStatements',function('vebugger#mdbg#_executeStatements'))
 
     call l:debugger.generateWriteActionsFromTemplate()
 
@@ -86,10 +86,10 @@ function! s:findFilePath(src,fileName,methodName)
     return ''
 endfunction
 
-function! s:readProgramOutput(pipeName,line,readResult,debugger)
+function! vebugger#mdbg#_readProgramOutput(pipeName,line,readResult,debugger)
 endfunction
 
-function! s:readWhere(pipeName,line,readResult,debugger)
+function! vebugger#mdbg#_readWhere(pipeName,line,readResult,debugger)
     if 'out'==a:pipeName
 	let l:matches=matchlist(a:line,'\v^\*(\d+)\.\s*([A-Za-z0-9_.+<>]+)\s*\((.+):(\d+)\)')
 	if 3<len(l:matches)
@@ -110,13 +110,13 @@ function! s:readWhere(pipeName,line,readResult,debugger)
     endif
 endfunction
 
-function! s:readFinish(pipeName,line,readResult,debugger)
+function! vebugger#mdbg#_readFinish(pipeName,line,readResult,debugger)
     if a:line=~'\VSTOP: Process Exited\$'
 	let a:readResult.std.programFinish={'finish':1}
     endif
 endfunction
 
-function! s:writeFlow(writeAction,debugger)
+function! vebugger#mdbg#_writeFlow(writeAction,debugger)
     if 'stepin'==a:writeAction
 	call a:debugger.writeLine('step')
     elseif 'stepover'==a:writeAction
@@ -128,11 +128,11 @@ function! s:writeFlow(writeAction,debugger)
     endif
 endfunction
 
-function! s:closeDebugger(writeAction,debugger)
+function! vebugger#mdbg#_closeDebugger(writeAction,debugger)
     call a:debugger.writeLine('quit')
 endfunction
 
-function! s:writeBreakpoints(writeAction,debugger)
+function! vebugger#mdbg#_writeBreakpoints(writeAction,debugger)
     for l:breakpoint in a:writeAction
 	let l:fullFileName=fnamemodify(l:breakpoint.file,':p')
 	if 'add'==(l:breakpoint.action)
@@ -145,7 +145,7 @@ function! s:writeBreakpoints(writeAction,debugger)
     endfor
 endfunction
 
-function! s:readBreakpointBound(pipeName,line,readResult,debugger)
+function! vebugger#mdbg#_readBreakpointBound(pipeName,line,readResult,debugger)
     if 'out'==a:pipeName
 	let l:matches=matchlist(a:line,'\vBreakpoint \#(\d+) bound\s*\(line (\d+) in ([^)]+)\)')
 	if 3<len(l:matches)
@@ -171,13 +171,13 @@ function! s:breakpointAdded(readResult,debugger)
     endif
 endfunction
 
-function! s:requestEvaluateExpression(writeAction,debugger)
+function! vebugger#mdbg#_requestEvaluateExpression(writeAction,debugger)
     for l:evalAction in a:writeAction
 	call a:debugger.writeLine('print '.l:evalAction.expression)
     endfor
 endfunction
 
-function! s:executeStatements(writeAction,debugger)
+function! vebugger#mdbg#_executeStatements(writeAction,debugger)
     for l:evalAction in a:writeAction
 	if has_key(l:evalAction,'statement')
 	    call a:debugger.writeLine('set '.substitute(l:evalAction.statement,'\v;\s*$','',''))
@@ -185,7 +185,7 @@ function! s:executeStatements(writeAction,debugger)
     endfor
 endfunction
 
-function! s:readEvaluatedExpressions(pipeName,line,readResult,debugger) dict
+function! vebugger#mdbg#_readEvaluatedExpressions(pipeName,line,readResult,debugger) dict
     if 'out'==a:pipeName
 	let l:matches=matchlist(a:line,'\v\[[^\]]*\]\s*mdbg\>\s*([^=]+)\=(.*)$')
 	if 2<len(l:matches)

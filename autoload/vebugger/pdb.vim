@@ -12,17 +12,17 @@ function! vebugger#pdb#start(entryFile,args)
 		call vebugger#std#openShellBuffer(l:debugger)
 	endif
 
-	call l:debugger.addReadHandler(function('s:readProgramOutput'))
-	call l:debugger.addReadHandler(function('s:readWhere'))
-	call l:debugger.addReadHandler(function('s:readFinish'))
-	call l:debugger.addReadHandler(function('s:readEvaluatedExpressions'))
+	call l:debugger.addReadHandler(function('vebugger#pdb#_readProgramOutput'))
+	call l:debugger.addReadHandler(function('vebugger#pdb#_readWhere'))
+	call l:debugger.addReadHandler(function('vebugger#pdb#_readFinish'))
+	call l:debugger.addReadHandler(function('vebugger#pdb#_readEvaluatedExpressions'))
 
-	call l:debugger.setWriteHandler('std','flow',function('s:writeFlow'))
-	call l:debugger.setWriteHandler('std','breakpoints',function('s:writeBreakpoints'))
-	call l:debugger.setWriteHandler('std','closeDebugger',function('s:closeDebugger'))
-	call l:debugger.setWriteHandler('std','evaluateExpressions',function('s:requestEvaluateExpression'))
-	call l:debugger.setWriteHandler('std','executeStatements',function('s:executeStatements'))
-	call l:debugger.setWriteHandler('std','removeAfterDisplayed',function('s:removeAfterDisplayed'))
+	call l:debugger.setWriteHandler('std','flow',function('vebugger#pdb#_writeFlow'))
+	call l:debugger.setWriteHandler('std','breakpoints',function('vebugger#pdb#_writeBreakpoints'))
+	call l:debugger.setWriteHandler('std','closeDebugger',function('vebugger#pdb#_closeDebugger'))
+	call l:debugger.setWriteHandler('std','evaluateExpressions',function('vebugger#pdb#_requestEvaluateExpression'))
+	call l:debugger.setWriteHandler('std','executeStatements',function('vebugger#pdb#_executeStatements'))
+	call l:debugger.setWriteHandler('std','removeAfterDisplayed',function('vebugger#pdb#_removeAfterDisplayed'))
 
 	call l:debugger.generateWriteActionsFromTemplate()
 
@@ -31,7 +31,7 @@ function! vebugger#pdb#start(entryFile,args)
 	return l:debugger
 endfunction
 
-function! s:readProgramOutput(pipeName,line,readResult,debugger) dict
+function! vebugger#pdb#_readProgramOutput(pipeName,line,readResult,debugger) dict
 	if 'out'==a:pipeName
 		if a:line=~"\\V\<C-[>[C" " After executing commands this seems to get appended...
 			let self.programOutputMode=1
@@ -54,7 +54,7 @@ function! s:readProgramOutput(pipeName,line,readResult,debugger) dict
 	endif
 endfunction
 
-function! s:readWhere(pipeName,line,readResult,debugger)
+function! vebugger#pdb#_readWhere(pipeName,line,readResult,debugger)
 	if 'out'==a:pipeName
 		let l:matches=matchlist(a:line,'\v^\> (.+)\((\d+)\).*\(\)$')
 
@@ -70,13 +70,13 @@ function! s:readWhere(pipeName,line,readResult,debugger)
 	endif
 endfunction
 
-function! s:readFinish(pipeName,line,readResult,debugger)
+function! vebugger#pdb#_readFinish(pipeName,line,readResult,debugger)
 	if a:line=='The program finished and will be restarted'
 		let a:readResult.std.programFinish={'finish':1}
 	endif
 endfunction
 
-function! s:writeFlow(writeAction,debugger)
+function! vebugger#pdb#_writeFlow(writeAction,debugger)
 	if 'stepin'==a:writeAction
 		call a:debugger.writeLine('step')
 	elseif 'stepover'==a:writeAction
@@ -88,11 +88,11 @@ function! s:writeFlow(writeAction,debugger)
 	endif
 endfunction
 
-function! s:closeDebugger(writeAction,debugger)
+function! vebugger#pdb#_closeDebugger(writeAction,debugger)
 	call a:debugger.writeLine('quit')
 endfunction
 
-function! s:writeBreakpoints(writeAction,debugger)
+function! vebugger#pdb#_writeBreakpoints(writeAction,debugger)
 	for l:breakpoint in a:writeAction
 		if 'add'==(l:breakpoint.action)
 			call a:debugger.writeLine('break '.fnameescape(fnamemodify(l:breakpoint.file,':p')).':'.l:breakpoint.line)
@@ -102,13 +102,13 @@ function! s:writeBreakpoints(writeAction,debugger)
 	endfor
 endfunction
 
-function! s:requestEvaluateExpression(writeAction,debugger)
+function! vebugger#pdb#_requestEvaluateExpression(writeAction,debugger)
 	for l:evalAction in a:writeAction
 		call a:debugger.writeLine('p '.l:evalAction.expression)
 	endfor
 endfunction
 
-function! s:executeStatements(writeAction,debugger)
+function! vebugger#pdb#_executeStatements(writeAction,debugger)
 	for l:evalAction in a:writeAction
 		if has_key(l:evalAction,'statement')
 			call a:debugger.writeLine('!'.l:evalAction.statement)
@@ -116,7 +116,7 @@ function! s:executeStatements(writeAction,debugger)
 	endfor
 endfunction
 
-function! s:readEvaluatedExpressions(pipeName,line,readResult,debugger) dict
+function! vebugger#pdb#_readEvaluatedExpressions(pipeName,line,readResult,debugger) dict
 	if 'out'==a:pipeName
 		if has_key(self,'expression') "Reading the actual value to print
 			let l:value=a:line
@@ -134,7 +134,7 @@ function! s:readEvaluatedExpressions(pipeName,line,readResult,debugger) dict
 	endif
 endfunction
 
-function! s:removeAfterDisplayed(writeAction,debugger)
+function! vebugger#pdb#_removeAfterDisplayed(writeAction,debugger)
 	for l:removeAction in a:writeAction
 		if has_key(l:removeAction,'id')
 			"call a:debugger.writeLine('undisplay '.l:removeAction.id)
