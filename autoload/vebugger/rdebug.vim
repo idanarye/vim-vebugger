@@ -11,15 +11,15 @@ function! vebugger#rdebug#start(entryFile,args)
 		call vebugger#std#openShellBuffer(l:debugger)
 	endif
 
-	call l:debugger.addReadHandler(function('s:readProgramOutput'))
-	call l:debugger.addReadHandler(function('s:readWhere'))
-	call l:debugger.addReadHandler(function('s:readEvaluatedExpressions'))
+	call l:debugger.addReadHandler(function('vebugger#rdebug#_readProgramOutput'))
+	call l:debugger.addReadHandler(function('vebugger#rdebug#_readWhere'))
+	call l:debugger.addReadHandler(function('vebugger#rdebug#_readEvaluatedExpressions'))
 
-	call l:debugger.setWriteHandler('std','flow',function('s:writeFlow'))
-	call l:debugger.setWriteHandler('std','breakpoints',function('s:writeBreakpoints'))
-	call l:debugger.setWriteHandler('std','evaluateExpressions',function('s:requestEvaluateExpression'))
-	call l:debugger.setWriteHandler('std','executeStatements',function('s:executeStatements'))
-	call l:debugger.setWriteHandler('std','removeAfterDisplayed',function('s:removeAfterDisplayed'))
+	call l:debugger.setWriteHandler('std','flow',function('vebugger#rdebug#_writeFlow'))
+	call l:debugger.setWriteHandler('std','breakpoints',function('vebugger#rdebug#_writeBreakpoints'))
+	call l:debugger.setWriteHandler('std','evaluateExpressions',function('vebugger#rdebug#_requestEvaluateExpression'))
+	call l:debugger.setWriteHandler('std','executeStatements',function('vebugger#rdebug#_executeStatements'))
+	call l:debugger.setWriteHandler('std','removeAfterDisplayed',function('vebugger#rdebug#_removeAfterDisplayed'))
 
 	call l:debugger.generateWriteActionsFromTemplate()
 
@@ -28,13 +28,13 @@ function! vebugger#rdebug#start(entryFile,args)
 	return l:debugger
 endfunction
 
-function! s:readProgramOutput(pipeName,line,readResult,debugger)
+function! vebugger#rdebug#_readProgramOutput(pipeName,line,readResult,debugger)
 	if 'err'==a:pipeName
 		let a:readResult.std.programOutput={'line':a:line}
 	endif
 endfunction
 
-function! s:readWhere(pipeName,line,readResult,debugger)
+function! vebugger#rdebug#_readWhere(pipeName,line,readResult,debugger)
 	if 'out'==a:pipeName
 		let l:matches=matchlist(a:line,'\v^([^:]+)\:(\d+)\:(.*)$')
 
@@ -50,7 +50,7 @@ function! s:readWhere(pipeName,line,readResult,debugger)
 	endif
 endfunction
 
-function! s:writeFlow(writeAction,debugger)
+function! vebugger#rdebug#_writeFlow(writeAction,debugger)
 	if 'stepin'==a:writeAction
 		call a:debugger.writeLine('step')
 	elseif 'stepover'==a:writeAction
@@ -62,7 +62,7 @@ function! s:writeFlow(writeAction,debugger)
 	endif
 endfunction
 
-function! s:writeBreakpoints(writeAction,debugger)
+function! vebugger#rdebug#_writeBreakpoints(writeAction,debugger)
 	for l:breakpoint in a:writeAction
 		if 'add'==(l:breakpoint.action)
 			call a:debugger.writeLine('break '.fnameescape(l:breakpoint.file).':'.l:breakpoint.line)
@@ -72,13 +72,13 @@ function! s:writeBreakpoints(writeAction,debugger)
 	endfor
 endfunction
 
-function! s:requestEvaluateExpression(writeAction,debugger)
+function! vebugger#rdebug#_requestEvaluateExpression(writeAction,debugger)
 	for l:evalAction in a:writeAction
 		call a:debugger.writeLine('display '.l:evalAction.expression)
 	endfor
 endfunction
 
-function! s:executeStatements(writeAction,debugger)
+function! vebugger#rdebug#_executeStatements(writeAction,debugger)
 	for l:evalAction in a:writeAction
 		if has_key(l:evalAction,'statement')
 			"rdebug uses Ruby functions for commands
@@ -87,7 +87,7 @@ function! s:executeStatements(writeAction,debugger)
 	endfor
 endfunction
 
-function! s:readEvaluatedExpressions(pipeName,line,readResult,debugger)
+function! vebugger#rdebug#_readEvaluatedExpressions(pipeName,line,readResult,debugger)
 	if 'out'==a:pipeName
 		let l:matches=matchlist(a:line,'\v^(\d+)\: (.*) \= (.*)$')
 		if 4<len(l:matches)
@@ -102,7 +102,7 @@ function! s:readEvaluatedExpressions(pipeName,line,readResult,debugger)
 	endif
 endfunction
 
-function! s:removeAfterDisplayed(writeAction,debugger)
+function! vebugger#rdebug#_removeAfterDisplayed(writeAction,debugger)
 	for l:removeAction in a:writeAction
 		if has_key(l:removeAction,'id')
 			call a:debugger.writeLine('undisplay '.l:removeAction.id)

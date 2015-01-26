@@ -16,15 +16,15 @@ function! vebugger#jdb#start(entryClass,args)
 		call vebugger#std#openShellBuffer(l:debugger)
 	endif
 
-	call l:debugger.addReadHandler(function('s:readProgramOutput'))
-	call l:debugger.addReadHandler(function('s:readWhere'))
-	call l:debugger.addReadHandler(function('s:readException'))
-	call l:debugger.addReadHandler(function('s:readEvaluatedExpressions'))
+	call l:debugger.addReadHandler(function('vebugger#jdb#_readProgramOutput'))
+	call l:debugger.addReadHandler(function('vebugger#jdb#_readWhere'))
+	call l:debugger.addReadHandler(function('vebugger#jdb#_readException'))
+	call l:debugger.addReadHandler(function('vebugger#jdb#_readEvaluatedExpressions'))
 
-	call l:debugger.setWriteHandler('std','flow',function('s:writeFlow'))
-	call l:debugger.setWriteHandler('std','breakpoints',function('s:writeBreakpoints'))
-	call l:debugger.setWriteHandler('std','evaluateExpressions',function('s:requestEvaluateExpression'))
-	call l:debugger.setWriteHandler('std','executeStatements',function('s:executeStatements'))
+	call l:debugger.setWriteHandler('std','flow',function('vebugger#jdb#_writeFlow'))
+	call l:debugger.setWriteHandler('std','breakpoints',function('vebugger#jdb#_writeBreakpoints'))
+	call l:debugger.setWriteHandler('std','evaluateExpressions',function('vebugger#jdb#_requestEvaluateExpression'))
+	call l:debugger.setWriteHandler('std','executeStatements',function('vebugger#jdb#_executeStatements'))
 
 	call l:debugger.generateWriteActionsFromTemplate()
 
@@ -33,7 +33,7 @@ function! vebugger#jdb#start(entryClass,args)
 	return l:debugger
 endfunction
 
-function! s:readProgramOutput(pipeName,line,readResult,debugger) dict
+function! vebugger#jdb#_readProgramOutput(pipeName,line,readResult,debugger) dict
 	if 'out'==a:pipeName
 		if a:line=~'\v^\> \>'
 					\||a:line=='> '
@@ -68,7 +68,7 @@ function! s:findFolderFromStackTrace(src,nameFromStackTrace)
 	return l:path
 endfunction
 
-function! s:readWhere(pipeName,line,readResult,debugger)
+function! vebugger#jdb#_readWhere(pipeName,line,readResult,debugger)
 	if 'out'==a:pipeName
 		let l:matches=matchlist(a:line,'\v\s*\[(\d+)]\s*(\S+)\s*\(([^:]*):(\d*)\)')
 		if 4<len(l:matches)
@@ -89,7 +89,7 @@ function! s:readWhere(pipeName,line,readResult,debugger)
 	endif
 endfunction
 
-function! s:readException(pipeName,line,readResult,debugger)
+function! vebugger#jdb#_readException(pipeName,line,readResult,debugger)
 	if 'out'==a:pipeName
 		let l:matches=matchlist(a:line,'\vException occurred:\s+(\S+)')
 		if 1<len(l:matches)
@@ -99,7 +99,7 @@ function! s:readException(pipeName,line,readResult,debugger)
 	endif
 endfunction
 
-function! s:writeFlow(writeAction,debugger)
+function! vebugger#jdb#_writeFlow(writeAction,debugger)
 	if 'stepin'==a:writeAction
 		call a:debugger.writeLine('step')
 	elseif 'stepover'==a:writeAction
@@ -122,7 +122,7 @@ function! s:getClassNameFromFile(filename)
 	return l:className
 endfunction
 
-function! s:writeBreakpoints(writeAction,debugger)
+function! vebugger#jdb#_writeBreakpoints(writeAction,debugger)
 	for l:breakpoint in a:writeAction
 		let l:class=''
 		if has_key(a:debugger.state.jdb.filesToClassesMap,l:breakpoint.file)
@@ -140,13 +140,13 @@ function! s:writeBreakpoints(writeAction,debugger)
 	endfor
 endfunction
 
-function! s:requestEvaluateExpression(writeAction,debugger)
+function! vebugger#jdb#_requestEvaluateExpression(writeAction,debugger)
 	for l:evalAction in a:writeAction
 		call a:debugger.writeLine('eval '.l:evalAction.expression)
 	endfor
 endfunction
 
-function! s:executeStatements(writeAction,debugger)
+function! vebugger#jdb#_executeStatements(writeAction,debugger)
 	for l:evalAction in a:writeAction
 		if has_key(l:evalAction,'statement')
 			"Use eval to run the statement - it works!
@@ -155,7 +155,7 @@ function! s:executeStatements(writeAction,debugger)
 	endfor
 endfunction
 
-function! s:readEvaluatedExpressions(pipeName,line,readResult,debugger)
+function! vebugger#jdb#_readEvaluatedExpressions(pipeName,line,readResult,debugger)
 	if 'out'==a:pipeName
 		let l:matches=matchlist(a:line,'\v^%(\s*%(%(%(\w|\.)+)\[\d+\] )+)? ([^=]+) \= (.*)$')
 		if 3<len(l:matches)
