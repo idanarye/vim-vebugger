@@ -57,7 +57,8 @@ function! vebugger#util#selectProcessOfFile(ofFile)
 		return str2nr(l:resultLinesParsed[l:chosenId][1])
 	else
 		let l:chosenLine=l:resultLines[l:chosenId]
-		return str2nr(matchlist(l:chosenLine,'\v^\s*\d+\)\s+(\d+)')[1])
+		let g:chosenLine = l:chosenLine
+		return str2nr(matchstr(l:chosenLine,'\v^\s*\zs(\d+)\ze\s*'))
 	endif
 endfunction
 

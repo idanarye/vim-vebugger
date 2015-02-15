@@ -22,7 +22,23 @@ command! -range -nargs=0 VBGexecuteSelectedText call vebugger#std#execute(vebugg
 command! -range -nargs=0 VBGrawWriteSelectedText call vebugger#writeLine(vebugger#util#get_visual_selection())
 
 command! -nargs=+ -complete=file VBGstartGDB call vebugger#gdb#start([<f-args>][0],{'args':[<f-args>][1:]})
-command! -nargs=1 -complete=file VBGattachGDB call vebugger#gdb#searchAndAttach(<q-args>)
+function! s:attachGDB(...)
+	if 1 == a:0
+		let l:processId=vebugger#util#selectProcessOfFile(a:1)
+		if 0 < l:processId
+			call vebugger#gdb#start(a:1, {'pid': l:processId})
+		endif
+	elseif 2 == a:0
+		if a:2 =~ '\v^\d+$'
+			call vebugger#gdb#start(a:1,{'pid': str2nr(a:2)})
+		else
+			call vebugger#gdb#start(a:1, {'con': a:2})
+		endif
+	else
+		throw "Can't call VBGattachGDB with ".a:0." arguments"
+	endif
+endfunction
+command! -nargs=+ -complete=file VBGattachGDB call s:attachGDB(<f-args>)
 command! -nargs=+ -complete=file VBGstartRDebug call vebugger#rdebug#start([<f-args>][0],{'args':[<f-args>][1:]})
 command! -nargs=+ -complete=file VBGstartPDB call vebugger#pdb#start([<f-args>][0],{'args':[<f-args>][1:]})
 command! -nargs=+ -complete=file VBGstartPDB2 call vebugger#pdb#start([<f-args>][0],{'args':[<f-args>][1:],'version':'2'})

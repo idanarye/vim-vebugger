@@ -1,10 +1,3 @@
-function! vebugger#gdb#searchAndAttach(binaryFile)
-	let l:processId=vebugger#util#selectProcessOfFile(a:binaryFile)
-	if 0<l:processId
-		call vebugger#gdb#start(a:binaryFile,{'pid':l:processId})
-	endif
-endfunction
-
 function! vebugger#gdb#start(binaryFile,args)
 	let l:debugger=vebugger#std#startDebugger(shellescape(vebugger#util#getToolFullPath('gdb',get(a:args,'version'),'gdb'))
 				\.' -i mi --silent '.fnameescape(a:binaryFile))
