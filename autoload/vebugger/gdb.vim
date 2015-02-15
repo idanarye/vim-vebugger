@@ -17,6 +17,8 @@ function! vebugger#gdb#start(binaryFile,args)
 
 	if get(a:args,'pid') "Attach to process
 		call l:debugger.writeLine('attach '.string(a:args.pid))
+	elseif has_key(a:args,'con') "Attach to gdbserver
+		call l:debugger.writeLine('target remote '.a:args.con)
 	else
 		call l:debugger.writeLine('set args '.vebugger#util#commandLineArgsForProgram(a:args).' 1>&2')
 		if !has('win32')
