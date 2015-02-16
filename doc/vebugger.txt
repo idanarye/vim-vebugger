@@ -94,6 +94,13 @@ argument is supplied when running the debugger:
 *g:vebugger_path_mdbg_32*  No default - use it for the 32bit version of Mdbg
 *g:vebugger_path_mdbg_64*  No default - use it for the 64bit version of Mdbg
 
+When stepping into functions in unopened files, they are opened with :new by
+default. This can be configured by setting *g:vebugger_view_source_cmd*
+
+Example: >
+    let g:vebugger_view_source_cmd='edit'
+<
+
 LAUNCHING DEBUGGERS                                      *vebugger-launching*
 
 A debugger's implementation is responsible for starting it. The standard is to
