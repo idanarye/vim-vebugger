@@ -1,5 +1,7 @@
 
 
+command! -nargs=0 VBGrepeat call vebugger#repeatLastUserAction()
+
 command! -nargs=1 VBGrawWrite call vebugger#userAction('writeLine', <q-args>)
 command! -nargs=0 VBGkill call vebugger#killDebugger()
 

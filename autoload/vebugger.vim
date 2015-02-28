@@ -295,12 +295,43 @@ function! vebugger#killDebugger()
     endif
 endfunction
 
+"Perform an action on the actvie debugger, and register that action
 function! vebugger#userAction(action, ...)
     if exists('s:debugger')
         if has_key(s:debugger, a:action)
+            let s:debugger.lastUserAction = {
+                        \'action': a:action,
+                        \'args': a:000}
+
+            try
+                doautocmd User Vebugger_PreUserAction
+            catch
+            endtry
+
             call call(s:debugger[a:action], a:000, s:debugger)
+
+            try
+                doautocmd User Vebugger_PostUserAction
+            catch
+            endtry
         else
             throw 'Current debugger does not support action '.a:action
+        endif
+    endif
+endfunction
+
+augroup vebugger_hooks
+    autocmd!
+    "Make a blank action hook to prevent 'No matching autocommands" warning
+    autocmd User Vebugger_* echo
+augroup END
+
+"Repeat the last action performed on the active debugger
+function! vebugger#repeatLastUserAction()
+    if exists('s:debugger')
+        if has_key(s:debugger, 'lastUserAction')
+            let l:lastUserAction = s:debugger.lastUserAction
+            call call(s:debugger[l:lastUserAction.action], l:lastUserAction.args, s:debugger)
         endif
     endif
 endfunction
