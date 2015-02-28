@@ -1,25 +1,25 @@
 
 
-command! -nargs=1 VBGrawWrite call vebugger#writeLine(<q-args>)
+command! -nargs=1 VBGrawWrite call vebugger#userAction('writeLine', <q-args>)
 command! -nargs=0 VBGkill call vebugger#killDebugger()
 
-command! -nargs=0 VBGstepIn call vebugger#setWriteActionAndPerform('std','flow','stepin')
-command! -nargs=0 VBGstepOver call vebugger#setWriteActionAndPerform('std','flow','stepover')
-command! -nargs=0 VBGstepOut call vebugger#setWriteActionAndPerform('std','flow','stepout')
-command! -nargs=0 VBGcontinue call vebugger#setWriteActionAndPerform('std','flow','continue')
+command! -nargs=0 VBGstepIn call vebugger#userAction('setWriteActionAndPerform', 'std', 'flow', 'stepin')
+command! -nargs=0 VBGstepOver call vebugger#userAction('setWriteActionAndPerform', 'std', 'flow', 'stepover')
+command! -nargs=0 VBGstepOut call vebugger#userAction('setWriteActionAndPerform', 'std', 'flow', 'stepout')
+command! -nargs=0 VBGcontinue call vebugger#userAction('setWriteActionAndPerform', 'std', 'flow', 'continue')
 
-command! -nargs=0 VBGtoggleTerminalBuffer call vebugger#toggleTerminalBuffer()
+command! -nargs=0 VBGtoggleTerminalBuffer call vebugger#userAction('toggleTerminalBuffer')
 command! -nargs=+ -complete=file VBGtoggleBreakpoint call vebugger#std#toggleBreakpoint(<f-args>)
 command! -nargs=0 VBGtoggleBreakpointThisLine call vebugger#std#toggleBreakpoint(expand('%:~:.'),line('.'))
 command! -nargs=0 VBGclearBreakpints call vebugger#std#clearBreakpoints()
 
-command! -nargs=1 VBGeval call vebugger#std#eval(<q-args>)
-command! -nargs=0 VBGevalWordUnderCursor call vebugger#std#eval(expand('<cword>'))
-command! -nargs=1 VBGexecute call vebugger#std#execute(<q-args>)
+command! -nargs=1 VBGeval call vebugger#userAction('std_eval', <q-args>)
+command! -nargs=0 VBGevalWordUnderCursor call vebugger#userAction('std_eval', expand('<cword>'))
+command! -nargs=1 VBGexecute call vebugger#userAction('std_execute', <q-args>)
 
-command! -range -nargs=0 VBGevalSelectedText call vebugger#std#eval(vebugger#util#get_visual_selection())
-command! -range -nargs=0 VBGexecuteSelectedText call vebugger#std#execute(vebugger#util#get_visual_selection())
-command! -range -nargs=0 VBGrawWriteSelectedText call vebugger#writeLine(vebugger#util#get_visual_selection())
+command! -range -nargs=0 VBGevalSelectedText call vebugger#userAction('std_eval', vebugger#util#get_visual_selection())
+command! -range -nargs=0 VBGexecuteSelectedText call vebugger#userAction('std_execute', vebugger#util#get_visual_selection())
+command! -range -nargs=0 VBGrawWriteSelectedText call vebugger#userAction('writeLine', vebugger#util#get_visual_selection())
 
 command! -nargs=+ -complete=file VBGstartGDB call vebugger#gdb#start([<f-args>][0],{'args':[<f-args>][1:]})
 function! s:attachGDB(...)
