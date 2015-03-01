@@ -305,14 +305,9 @@ function! vebugger#userAction(action, ...)
 
             try
                 doautocmd User Vebugger_PreUserAction
-            catch
-            endtry
-
-            call call(s:debugger[a:action], a:000, s:debugger)
-
-            try
+            finally
+                call call(s:debugger[a:action], a:000, s:debugger)
                 doautocmd User Vebugger_PostUserAction
-            catch
             endtry
         else
             throw 'Current debugger does not support action '.a:action
