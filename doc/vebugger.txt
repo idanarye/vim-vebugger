@@ -137,22 +137,26 @@ LAUNCHING JDB                                                 *vebugger-jdb*
 
 JDB is launched with *vebugger#jdb#start*
 >
-    call vebugger#jdb#start('Main',{
+    call vebugger#jdb#start({
+        \'entryClass':'Main',
         \'classpath':'classes',
         \'srcpath':'src',
         \'args':['hello','world']})
 <
-Unlike in the other debuggers, the first argument here is not the name of a
-file - it's the name of the class to run. The supported extra arguments are:
+Unlike in the other debuggers, there is no first argument. The supported extra arguments are:
 * "args": Command line arguments for the debugged program
 * "classpath": Where to look for class files
 * "srcpath": Where to look for source files
 * "version": The version of the debugger to run
+* "con": A connection string for attaching to an existing jvm. Ex. localhost:8000 or 8000
+  defaults to 9009, the standard debug port for jvms.
+* "entryClass": A class that contains main for starting the jdb up with.
+If entryClass is defined it takes precedence over con.
 If you don't supply "classpath" and "srcpath", Vebugger will assume you are
 using the current directory for source files and class files.
 
-JDB does not have a command for starting it, since you usually want to supply
-"classpath" and "srcpath".
+JDB can be started with VBGattachJDB. If the desired the user can call the command with the extra
+arguments that are defined above.
 
 
 LAUNCHING RDEBUG                                             *vebugger-rdebug*

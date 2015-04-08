@@ -28,6 +28,7 @@ command! -nargs=+ -complete=file VBGstartPDB call vebugger#pdb#start([<f-args>][
 command! -nargs=+ -complete=file VBGstartPDB2 call vebugger#pdb#start([<f-args>][0],{'args':[<f-args>][1:],'version':'2'})
 command! -nargs=+ -complete=file VBGstartPDB3 call vebugger#pdb#start([<f-args>][0],{'args':[<f-args>][1:],'version':'3'})
 command! -nargs=+ -complete=file VBGstartGDBForD call vebugger#gdb#start([<f-args>][0],{'args':[<f-args>][1:],'entry':'_Dmain'})
+command! -nargs=* -complete=command VBGattachJDB call vebugger#jdb#start(string(<q-args>) ? eval([<f-args>][0]) : {})
 
 if exists('g:vebugger_leader')
 	if !empty(g:vebugger_leader)
