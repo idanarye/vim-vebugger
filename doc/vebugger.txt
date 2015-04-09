@@ -155,7 +155,7 @@ If entryClass is defined it takes precedence over con.
 If you don't supply "classpath" and "srcpath", Vebugger will assume you are
 using the current directory for source files and class files.
 
-JDB can be started with VBGattachJDB. If the desired the user can call the command with the extra
+JDB can be started with VBGstartJDB. If the desired the user can call the command with the extra
 arguments that are defined above.
 
 
