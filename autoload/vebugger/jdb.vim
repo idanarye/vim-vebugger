@@ -1,7 +1,7 @@
 function! vebugger#jdb#start(args)
-  if !has_key(a:args, 'con')
-    let a:args.con = 9009
-  endif
+	if !has_key(a:args, 'con')
+		let a:args.con = 9009
+	endif
 
 	let l:debugger=vebugger#std#startDebugger(shellescape(vebugger#util#getToolFullPath('jdb',get(a:args,'version'),'jdb'))
 				\.(has_key(a:args,'classpath') ? ' -classpath '.fnameescape(a:args.classpath) : '')
@@ -15,7 +15,7 @@ function! vebugger#jdb#start(args)
 	endif
 	let l:debugger.state.jdb.filesToClassesMap={}
 
-  if has_key(a:args, 'entryClass')
+	if has_key(a:args, 'entryClass')
 		if !has('win32')
 			call vebugger#std#openShellBuffer(l:debugger)
 		endif
