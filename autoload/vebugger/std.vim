@@ -235,8 +235,10 @@ function! s:standardCloseHandlers.removeCurrentMarker(debugger) dict
     sign unplace 1
 endfunction
 
+highlight BreakPoint term=reverse cterm=reverse gui=reverse     
+
 sign define vebugger_current text=->
-sign define vebugger_breakpoint text=** linehl=ColorColumn
+sign define vebugger_breakpoint text=** linehl=BreakPoint
 
 "Update all the marks(currently executed line and breakpoints) for a file
 function! vebugger#std#updateMarksForFile(state,filename)
