@@ -235,7 +235,9 @@ function! s:standardCloseHandlers.removeCurrentMarker(debugger) dict
     sign unplace 1
 endfunction
 
-highlight BreakPoint term=reverse cterm=reverse gui=reverse     
+if !hlexists('BreakPoint')
+    highlight BreakPoint term=reverse cterm=reverse gui=reverse     
+endif
 
 sign define vebugger_current text=->
 sign define vebugger_breakpoint text=** linehl=BreakPoint
