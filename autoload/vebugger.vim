@@ -289,6 +289,7 @@ function! vebugger#killDebugger()
         autocmd!
     augroup END
     if exists('s:debugger')
+        call vebugger#std#closeShellBuffer(s:debugger)
         call s:debugger.closeTerminalBuffer()
         call s:debugger.kill()
         unlet s:debugger

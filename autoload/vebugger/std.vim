@@ -101,6 +101,18 @@ function! vebugger#std#openShellBuffer(debugger)
     wincmd p
 endfunction
 
+"Closes the shell buffer
+function! vebugger#std#closeShellBuffer(debugger)
+    if has_key(a:debugger,'shellBuffer')
+        if -1<bufwinnr(a:debugger.shellBuffer)
+            let l:bufwin=bufwinnr(a:debugger.shellBuffer)
+            exe l:bufwin.'wincmd w'
+            wincmd c
+            wincmd p
+        endif
+    endif
+endfunction
+
 let s:standardFunctions={}
 
 "Write a line to the shell buffer
