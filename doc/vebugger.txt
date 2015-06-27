@@ -253,7 +253,7 @@ MANAGE BREAKPOINTS                                      *vebugger-breakpoints*
 
 *:VBGtoggleBreakpoint* Toggle a breakpoint. The file and line should be supplied as arguments.
 *:VBGtoggleBreakpointThisLine* Toggle a breakpoint for the current line.
-*:VBGclearBreakpints* Clear all breakpoints.
+*:VBGclearBreakpoints* Clear all breakpoints.
 
 EVALUATE EXPRESSIONS                                      *vebugger-evalutate*
 
@@ -294,7 +294,7 @@ O      |:VBGstepOut|
 c      |:VBGcontinue|
 
 b      |:VBGtoggleBreakpointThisLine|
-B      |:VBGclearBreakpints|
+B      |:VBGclearBreakpoints|
 
 e      |:VBGevalWordUnderCursor| in normal mode
        |:VBGevalSelectedText| in select mode

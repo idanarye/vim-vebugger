@@ -13,7 +13,7 @@ command! -nargs=0 VBGcontinue call vebugger#userAction('setWriteActionAndPerform
 command! -nargs=0 VBGtoggleTerminalBuffer call vebugger#userAction('toggleTerminalBuffer')
 command! -nargs=+ -complete=file VBGtoggleBreakpoint call vebugger#std#toggleBreakpoint(<f-args>)
 command! -nargs=0 VBGtoggleBreakpointThisLine call vebugger#std#toggleBreakpoint(expand('%:~:.'),line('.'))
-command! -nargs=0 VBGclearBreakpints call vebugger#std#clearBreakpoints()
+command! -nargs=0 VBGclearBreakpoints call vebugger#std#clearBreakpoints()
 
 command! -nargs=1 VBGeval call vebugger#userAction('std_eval', <q-args>)
 command! -nargs=0 VBGevalWordUnderCursor call vebugger#userAction('std_eval', expand('<cword>'))
@@ -56,7 +56,7 @@ if exists('g:vebugger_leader')
 					\'c':'VBGcontinue',
 					\'t':'VBGtoggleTerminalBuffer',
 					\'b':'VBGtoggleBreakpointThisLine',
-					\'B':'VBGclearBreakpints',
+					\'B':'VBGclearBreakpoints',
 					\'e':'VBGevalWordUnderCursor',
 					\'E':'exe "VBGeval ".input("VBG-Eval> ")',
 					\'x':'exe "VBGexecute ".getline(".")',
