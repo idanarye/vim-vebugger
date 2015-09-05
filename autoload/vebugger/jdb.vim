@@ -76,10 +76,12 @@ function! s:findFolderFromStackTrace(src,nameFromStackTrace)
   " Remove class name.
   let l:package = strridx(l:canonicalClassName, ".") >= 0 ? strpart(l:canonicalClassName, 0, strridx(l:canonicalClassName, ".")) : ""
 
-  " Now first try to find a tag for the class from the required package.
-  let l:classTag = s:getTagContainingString(l:simpleClassName, l:package)
-  if (has_key(l:classTag, "filename"))
-    return fnamemodify(l:classTag.filename, ":h")
+  if exists('g:vebugger_use_tags') && g:vebugger_use_tags
+    " Now first try to find a tag for the class from the required package.
+    let l:classTag = s:getTagContainingString(l:simpleClassName, l:package)
+    if (has_key(l:classTag, "filename"))
+      return fnamemodify(l:classTag.filename, ":h")
+    endif
   endif
 
   " If no such tag was found, try to find it using the src path.
