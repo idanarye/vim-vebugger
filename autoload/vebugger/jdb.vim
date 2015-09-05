@@ -60,7 +60,7 @@ function! s:getTagContainingString(tag, str)
   let l:tags = taglist(a:tag)
   if (len(l:tags) > 0)
     for l:tag in l:tags
-      if (filereadable(l:tag.filename) && (len(a:str) == 0 || match(readfile(l:tag.filename), a:str)))
+      if (filereadable(l:tag.filename) && match(readfile(l:tag.filename), a:str) >= 0)
         return l:tag
       endif
     endfor
