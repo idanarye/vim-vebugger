@@ -56,7 +56,33 @@ function! vebugger#jdb#_readProgramOutput(pipeName,line,readResult,debugger) dic
 	endif
 endfunction
 
+function! s:getTagContainingString(tag, str)
+  let l:tags = taglist(a:tag)
+  if (len(l:tags) > 0)
+    for l:tag in l:tags
+      if (filereadable(l:tag.filename) && (len(a:str) == 0 || match(readfile(l:tag.filename), a:str)))
+        return l:tag
+      endif
+    endfor
+  endif
+  return {}
+endfunction
+
 function! s:findFolderFromStackTrace(src,nameFromStackTrace)
+  " Remove method name.
+  let l:canonicalClassName = strpart(a:nameFromStackTrace, 0, strridx(a:nameFromStackTrace, "."))
+  " Remove package name.
+  let l:simpleClassName = strridx(l:canonicalClassName, ".") >= 0 ? strpart(l:canonicalClassName, strridx(l:canonicalClassName, ".")) : l:canonicalClassName
+  " Remove class name.
+  let l:package = strridx(l:canonicalClassName, ".") >= 0 ? strpart(l:canonicalClassName, 0, strridx(l:canonicalClassName, ".")) : ""
+
+  " Now first try to find a tag for the class from the required package.
+  let l:classTag = s:getTagContainingString(l:simpleClassName, l:package)
+  if (has_key(l:classTag, "filename"))
+    return fnamemodify(l:classTag.filename, ":h")
+  endif
+
+  " If no such tag was found, try to find it using the src path.
 	let l:path=a:src
 	for l:dirname in split(a:nameFromStackTrace,'\.')
 		let l:nextPath=l:path.'/'.fnameescape(l:dirname)
