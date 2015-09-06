@@ -60,7 +60,7 @@ function! s:getTagContainingString(tag, str)
   let l:tags = taglist(a:tag)
   if (len(l:tags) > 0)
     for l:tag in l:tags
-      if (filereadable(l:tag.filename) && (len(a:str) == 0 || match(readfile(l:tag.filename), a:str)))
+      if (filereadable(l:tag.filename) && match(readfile(l:tag.filename), a:str) >= 0)
         return l:tag
       endif
     endfor
@@ -68,18 +68,22 @@ function! s:getTagContainingString(tag, str)
   return {}
 endfunction
 
-function! s:findFolderFromStackTrace(src,nameFromStackTrace)
+function! s:findFolderFromStackTrace(src,nameFromStackTrace,frameNumber)
   " Remove method name.
   let l:canonicalClassName = strpart(a:nameFromStackTrace, 0, strridx(a:nameFromStackTrace, "."))
   " Remove package name.
-  let l:simpleClassName = strridx(l:canonicalClassName, ".") >= 0 ? strpart(l:canonicalClassName, strridx(l:canonicalClassName, ".")) : l:canonicalClassName
+  let l:simpleClassName = strridx(l:canonicalClassName, ".") >= 0 ? strpart(l:canonicalClassName, strridx(l:canonicalClassName, ".") + 1) : l:canonicalClassName
   " Remove class name.
   let l:package = strridx(l:canonicalClassName, ".") >= 0 ? strpart(l:canonicalClassName, 0, strridx(l:canonicalClassName, ".")) : ""
 
-  " Now first try to find a tag for the class from the required package.
-  let l:classTag = s:getTagContainingString(l:simpleClassName, l:package)
-  if (has_key(l:classTag, "filename"))
-    return fnamemodify(l:classTag.filename, ":h")
+  " We don't really use callstack, so we use tags only for the current location.
+  " Otherwise it makes everything too slow.
+  if exists('g:vebugger_use_tags') && g:vebugger_use_tags && a:frameNumber == 1
+    " Now first try to find a tag for the class from the required package.
+    let l:classTag = s:getTagContainingString(l:simpleClassName, l:package)
+    if (has_key(l:classTag, "filename"))
+      return fnamemodify(l:classTag.filename, ":h")
+    endif
   endif
 
   " If no such tag was found, try to find it using the src path.
@@ -98,9 +102,9 @@ function! vebugger#jdb#_readWhere(pipeName,line,readResult,debugger)
 	if 'out'==a:pipeName
 		let l:matches=matchlist(a:line,'\v\s*\[(\d+)]\s*(\S+)\s*\(([^:]*):(\d*)\)')
 		if 4<len(l:matches)
-			let l:file=s:findFolderFromStackTrace(a:debugger.state.jdb.srcpath,l:matches[2]).'/'.l:matches[3]
-			let l:file=fnamemodify(l:file,':~:.')
 			let l:frameNumber=str2nr(l:matches[1])
+			let l:file=s:findFolderFromStackTrace(a:debugger.state.jdb.srcpath,l:matches[2],l:frameNumber).'/'.l:matches[3]
+			let l:file=fnamemodify(l:file,':~:.')
 			if 1==l:frameNumber " first stackframe is the current location
 				let a:readResult.std.location={
 							\'file':(l:file),
