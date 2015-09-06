@@ -101,6 +101,14 @@ Example: >
     let g:vebugger_view_source_cmd='edit'
 <
 
+Some debuggers (currently jdb only) may use vim tags to find required source
+files. This is disabled by default, to enable this set *g:vebugger_use_tags*
+option:
+
+Example: >
+    let g:vebugger_use_tags=1
+<
+
 LAUNCHING DEBUGGERS                                      *vebugger-launching*
 
 A debugger's implementation is responsible for starting it. The standard is to
