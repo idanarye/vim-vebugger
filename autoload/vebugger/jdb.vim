@@ -68,7 +68,7 @@ function! s:getTagContainingString(tag, str)
   return {}
 endfunction
 
-function! s:findFolderFromStackTrace(src,nameFromStackTrace)
+function! s:findFolderFromStackTrace(src,nameFromStackTrace,frameNumber)
   " Remove method name.
   let l:canonicalClassName = strpart(a:nameFromStackTrace, 0, strridx(a:nameFromStackTrace, "."))
   " Remove package name.
@@ -76,7 +76,9 @@ function! s:findFolderFromStackTrace(src,nameFromStackTrace)
   " Remove class name.
   let l:package = strridx(l:canonicalClassName, ".") >= 0 ? strpart(l:canonicalClassName, 0, strridx(l:canonicalClassName, ".")) : ""
 
-  if exists('g:vebugger_use_tags') && g:vebugger_use_tags
+  " We don't really use callstack, so we use tags only for the current location.
+  " Otherwise it makes everything too slow.
+  if exists('g:vebugger_use_tags') && g:vebugger_use_tags && a:frameNumber == 1
     " Now first try to find a tag for the class from the required package.
     let l:classTag = s:getTagContainingString(l:simpleClassName, l:package)
     if (has_key(l:classTag, "filename"))
@@ -100,9 +102,9 @@ function! vebugger#jdb#_readWhere(pipeName,line,readResult,debugger)
 	if 'out'==a:pipeName
 		let l:matches=matchlist(a:line,'\v\s*\[(\d+)]\s*(\S+)\s*\(([^:]*):(\d*)\)')
 		if 4<len(l:matches)
-			let l:file=s:findFolderFromStackTrace(a:debugger.state.jdb.srcpath,l:matches[2]).'/'.l:matches[3]
-			let l:file=fnamemodify(l:file,':~:.')
 			let l:frameNumber=str2nr(l:matches[1])
+			let l:file=s:findFolderFromStackTrace(a:debugger.state.jdb.srcpath,l:matches[2],l:frameNumber).'/'.l:matches[3]
+			let l:file=fnamemodify(l:file,':~:.')
 			if 1==l:frameNumber " first stackframe is the current location
 				let a:readResult.std.location={
 							\'file':(l:file),
