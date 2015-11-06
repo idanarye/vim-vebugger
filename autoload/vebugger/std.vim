@@ -180,7 +180,7 @@ function! s:standardThinkHandlers.moveToCurrentLine(readResult,debugger) dict
                 exe 'sign unplace 1 file='.fnameescape(fnamemodify(a:debugger.state.std.location.file,':p'))
             endif
             let a:debugger.state.std.location=deepcopy(a:readResult.std.location)
-            if !bufexists(a:readResult.std.location.file)
+            if -1 == bufwinnr(a:readResult.std.location.file)
                 exe get(g:, 'vebugger_view_source_cmd', 'new').' '.(a:readResult.std.location.file)
             endif
             call vebugger#std#updateMarksForFile(a:debugger.state,a:readResult.std.location.file)
@@ -258,7 +258,7 @@ endif
 "Update all the marks(currently executed line and breakpoints) for a file
 function! vebugger#std#updateMarksForFile(state,filename)
     let l:filename=fnamemodify(a:filename,":p")
-    if bufexists(l:filename)
+    if -1 < bufnr(l:filename)
         exe 'sign unplace 1 file='.fnameescape(fnamemodify(l:filename,':p'))
         exe 'sign unplace 2 file='.fnameescape(fnamemodify(l:filename,':p'))
 
