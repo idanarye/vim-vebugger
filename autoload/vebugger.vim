@@ -108,7 +108,7 @@ function! s:f_debugger.showTerminalBuffer() dict
     setlocal buftype=nofile
     setlocal bufhidden=wipe
     let self.terminalBuffer=bufnr('')
-    silent file Vebugger:Ternimal
+    silent file Vebugger:Terminal
     wincmd p
 endfunction
 
