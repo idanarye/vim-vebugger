@@ -493,3 +493,26 @@ defines the "std" namespace, and plugins built on top of Vebugger can define a
 namespaced named after the plugin to contain their own read results.  A
 debugger frontend implementation can also define it's own namespace for
 storing debugger-specific data and configuration.
+
+COMPILER OUTPUT BUFFERERS               *vebugger-architecture-bufferers*
+
+Read handlers receive lines created by the debugger output bufferer. There is
+only one for each debugger, and if you just want to get the debugger output
+line-by-line "as is" you can just use the default one and ignore this section.
+
+The debugger bufferer is a dict function(|:func-dict|) that operates on pipe
+objects. It will be called when the pipe object's "self.buffer", which
+represents everything read from a debugger's output stream, has new data.
+
+The bufferer function should:
+* return a list of new lines that will be send to the read handlers, or an
+  empty list if there are no new lines.
+* "advance" the buffer - delete from it's head everything that was handled.
+  This can easily be done with |strpart()|.
+
+Bufferers should be set individually for each pipe, usually in the debugger
+creation function:
+
+Example: >
+	let l:debugger.pipes.out.bufferer = function('g:myCustomBufferer')
+<

@@ -1,21 +1,13 @@
-"Read and return all new lines from a Vebugger pipe object.
-function! s:readNewLinesFromPipe(pipeObject)
-    "read
-    let l:text=a:pipeObject.pipe.read(1000,0)
-    while 0<len(l:text)
-        let a:pipeObject.buffer.=l:text
-        let l:text=a:pipeObject.pipe.read(1000,0)
+"Read bytes from pipe to buffer
+function! s:fillBufferFromPipe(pipeObject)
+    let l:text = a:pipeObject.pipe.read(1024, 0)
+    let l:totalBytesRead = 0
+    while 0 < len(l:text)
+        let l:totalBytesRead += len(l:text)
+        let a:pipeObject.buffer .= l:text
+        let l:text = a:pipeObject.pipe.read(1024, 0)
     endwhile
-
-    "parse
-    let l:lastNewline=strridx(a:pipeObject.buffer,"\n")
-    if 0<=l:lastNewline
-        let l:outLines=split(strpart(a:pipeObject.buffer,0,l:lastNewline),'\r\n\|\n\|\r')
-        let a:pipeObject.buffer=strpart(a:pipeObject.buffer,l:lastNewline+1)
-        return l:outLines
-    endif
-
-    return []
+    return l:totalBytesRead
 endfunction
 
 let s:f_debugger={}
@@ -41,16 +33,19 @@ endfunction
 
 "Check for new lines from the debugger's interactive shell and handle them
 function! s:f_debugger.invokeReading() dict
-    let l:newLines={}
+    let l:newLines = {}
     for l:k in keys(self.pipes)
-        let l:nl=s:readNewLinesFromPipe(self.pipes[l:k])
-        if 0<len(l:nl)
-            let l:newLines[l:k]=l:nl
+        let l:pipe = self.pipes[l:k]
+        if 0 < s:fillBufferFromPipe(l:pipe)
+            let l:nl = l:pipe.bufferer()
+            if 0 < len(l:nl)
+                let l:newLines[l:k] = l:nl
+            endif
         endif
     endfor
     for l:k in keys(l:newLines)
         for l:line in l:newLines[l:k]
-            call self.handleLine(l:k,l:line)
+            call self.handleLine(l:k, l:line)
         endfor
     endfor
 
@@ -249,9 +244,14 @@ function! vebugger#createDebugger(command)
     let l:debugger.outBuffer=''
     let l:debugger.errBuffer=''
 
-    let l:debugger.pipes={
-                \'out':{'pipe':(l:debugger.shell.stdout),'buffer':''},
-                \'err':{'pipe':(l:debugger.shell.stderr),'buffer':'','annotation':"err:\t\t"}}
+    let l:debugger.pipes = {
+                \ 'out': {'pipe':(l:debugger.shell.stdout), 'buffer': ''},
+                \ 'err': {'pipe':(l:debugger.shell.stderr), 'buffer': '', 'annotation': "err:\t\t"}}
+    for l:pipe in values(l:debugger.pipes)
+        "let l:pipe.buffer = ''
+        "let l:pipe.readIntoBuffer = function('vebugger#readIntoBuffer')
+        "let l:pipe.bufferer = function('vebugger#readNewLinesFromPipe')
+    endfor
 
     let l:debugger.readResultTemplate={}
     let l:debugger.state={}

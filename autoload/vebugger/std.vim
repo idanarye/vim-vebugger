@@ -1,5 +1,12 @@
 let g:vebugger_breakpoints=[]
 
+"Initialize the default pipe bufferers
+function! vebugger#std#setStandardBufferers(debugger)
+    for l:pipe in values(a:debugger.pipes)
+        let l:pipe.bufferer = function('vebugger#std#readNewLinesFromPipe')
+    endfor
+endfunction
+
 "Initialize the std part of the debugger's state
 function! vebugger#std#setStandardState(debugger)
     let a:debugger.state.std={
@@ -55,6 +62,7 @@ endfunction
 
 "Performs the standard initialization of the debugger object
 function! vebugger#std#standardInit(debugger)
+    call vebugger#std#setStandardBufferers(a:debugger)
     call vebugger#std#setStandardState(a:debugger)
     call vebugger#std#setStandardReadResultTemplate(a:debugger)
     call vebugger#std#setStandardWriteactionsTemplate(a:debugger)
@@ -70,6 +78,19 @@ function! vebugger#std#startDebugger(command)
     call vebugger#std#standardInit(l:debugger)
 
     return l:debugger
+endfunction
+
+
+"Read and return all new lines from a Vebugger pipe object.
+function! vebugger#std#readNewLinesFromPipe() dict
+    let l:lastNewline = strridx(self.buffer, "\n")
+    if 0 <= l:lastNewline
+        let l:outLines = split(strpart(self.buffer, 0, l:lastNewline), '\r\n\|\n\|\r')
+        let self.buffer = strpart(self.buffer, l:lastNewline + 1)
+        return l:outLines
+    endif
+
+    return []
 endfunction
 
 
