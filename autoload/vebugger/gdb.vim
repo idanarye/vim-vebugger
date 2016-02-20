@@ -7,6 +7,8 @@ function! vebugger#gdb#start(binaryFile,args)
 
 	let l:debugger.pipes.err.annotation = "err&prg\t\t"
 	call l:debugger.writeLine("set width 0")
+	call l:debugger.writeLine("set print pretty off")
+	call l:debugger.writeLine("set print array off")
 	call l:debugger.writeLine("define hook-stop\nwhere\nend")
 
 	if get(a:args,'pid') "Attach to process
