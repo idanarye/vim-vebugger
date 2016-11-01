@@ -41,6 +41,24 @@ function! s:attachGDB(...)
 	endif
 endfunction
 command! -nargs=+ -complete=file VBGattachGDB call s:attachGDB(<f-args>)
+command! -nargs=+ -complete=file VBGstartLLDB call vebugger#lldb#start([<f-args>][0],{'args':[<f-args>][1:]})
+function! s:attachLLDB(...)
+	if 1 == a:0
+		let l:processId=vebugger#util#selectProcessOfFile(a:1)
+		if 0 < l:processId
+			call vebugger#lldb#start(a:1, {'pid': l:processId})
+		endif
+	elseif 2 == a:0
+		if a:2 =~ '\v^\d+$'
+			call vebugger#lldb#start(a:1,{'pid': str2nr(a:2)})
+		else
+			call vebugger#lldb#start(a:1, {'con': a:2})
+		endif
+	else
+		throw "Can't call VBGattachLLDB with ".a:0." arguments"
+	endif
+endfunction
+command! -nargs=+ -complete=file VBGattachLLDB call s:attachLLDB(<f-args>)
 command! -nargs=+ -complete=file VBGstartRDebug call vebugger#rdebug#start([<f-args>][0],{'args':[<f-args>][1:]})
 command! -nargs=+ -complete=file VBGstartPDB call vebugger#pdb#start([<f-args>][0],{'args':[<f-args>][1:]})
 command! -nargs=+ -complete=file VBGstartPDB2 call vebugger#pdb#start([<f-args>][0],{'args':[<f-args>][1:],'version':'2'})
