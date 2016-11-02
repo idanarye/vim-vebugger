@@ -1,7 +1,7 @@
 let s:script_dir_path=expand('<sfile>:p:h')
 
 function! vebugger#lldb#start(binaryFile,args)
-	let l:debuggerExe=vebugger#util#getToolFullPath('python2',get(a:args,'version'),'python2')
+	let l:debuggerExe=vebugger#util#getToolFullPath('python',get(a:args,'version'),'python2')
 	let l:debugger=vebugger#std#startDebugger(shellescape(l:debuggerExe)
 				\.' '.s:script_dir_path.'/lldb_wrapper.py '.fnameescape(a:binaryFile))
 

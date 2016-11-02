@@ -7,8 +7,46 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 
-import lldb
+import os.path
+import platform
+import subprocess
 import sys
+
+try:
+    # Just try for LLDB in case PYTHONPATH is already correctly setup
+    import lldb
+except ImportError:
+    lldb_python_dirs = []
+    # lldb is not in the PYTHONPATH, try some defaults for the current platform
+    platform_system = platform.system()
+    if platform_system == 'Darwin':
+        # On Darwin, try the currently selected Xcode directory
+        try:
+            xcode_dir = subprocess.check_output(['xcode-select', '--print-path'])
+        except subprocess.CalledProcessError:
+            xcode_dir = None
+        if xcode_dir:
+            lldb_python_dirs.append(
+                os.path.realpath(
+                    os.path.join(xcode_dir, '../SharedFrameworks/LLDB.framework/Versions/A/Resources/Python')
+                )
+            )
+        lldb_python_dirs.append(
+            '/Library/Developer/CommandLineTools/Library/PrivateFrameworks/LLDB.framework/Versions/A/Resources/Python'
+        )
+    for lldb_python_dir in lldb_python_dirs:
+        if os.path.exists(lldb_python_dir):
+            if lldb_python_dir not in sys.path:
+                sys.path.append(lldb_python_dir)
+                try:
+                    import lldb
+                except ImportError:
+                    pass
+                else:
+                    break
+    else:
+        sys.stderr.write('Error: could not locate the "lldb" module, please set PYTHONPATH correctly\n')
+        sys.exit(1)
 
 
 class NoCustomCommandError(Exception):
@@ -98,16 +136,26 @@ class Debugger(object):
 
     @property
     def program_stdout(self):
-        stdout = [self._process.GetSTDOUT(1024)]
-        while stdout[-1]:
-            stdout.append(self._process.GetSTDOUT(1024))
+        stdout = []
+        has_text = True
+        while has_text:
+            text = self._process.GetSTDOUT(1024)
+            if text:
+                stdout.append(text)
+            else:
+                has_text = False
         return ''.join(stdout)
 
     @property
     def program_stderr(self):
-        stderr = [self._process.GetSTDERR(1024)]
-        while stderr[-1]:
-            stderr.append(self._process.GetSTDERR(1024))
+        stderr = []
+        has_text = True
+        while has_text:
+            text = self._process.GetSTDERR(1024)
+            if text:
+                stderr.append(text)
+            else:
+                has_text = False
         return ''.join(stderr)
 
     @property
