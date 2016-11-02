@@ -17,6 +17,7 @@ Vebugger is built as a generic framework for building frontends for
 interactive shell debugger, and comes with implementations for:
 
  * GDB - doesn't need introdcution...
+ * LLDB - debugger based on LLVM for C-family languages
  * JDB - a Java debugger
  * Mdbg - a .NET debugger(Windows only)
  * PDB - a Python module for debugging Python scripts
