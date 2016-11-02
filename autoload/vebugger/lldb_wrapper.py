@@ -7,7 +7,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 
-import os.path
+import os
 import platform
 import subprocess
 import sys
@@ -187,6 +187,13 @@ def main():
     debugger = Debugger(executable)
 
     # set debugger options
+    # -> first read lldbinit
+    try:
+        with open(os.path.expanduser('~/.lldbinit')) as f:
+            for line in f:
+                debugger.run_command(line)
+    except IOError:
+        pass
     debugger.run_command('settings set thread-format ${file.fullpath}:${line.number}')
     debugger.run_command('settings set auto-confirm 1')
 
