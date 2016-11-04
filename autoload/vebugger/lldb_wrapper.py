@@ -7,10 +7,16 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 
+import collections
 import os
 import platform
+import re
 import subprocess
 import sys
+
+
+FilePosition = collections.namedtuple('FilePosition', ['filepath', 'linenumber'])
+
 
 try:
     # Just try for LLDB in case PYTHONPATH is already correctly setup
@@ -86,6 +92,18 @@ class Debugger(object):
         self._state_dict = None
         self._breakpoint_manager = self.BreakpointManager()
         self._custom_commands = ['br', 'clear']
+        self._set_options()
+
+    def _set_options(self):
+        # -> first read lldbinit
+        try:
+            with open(os.path.expanduser('~/.lldbinit')) as f:
+                for line in f:
+                    self.run_command(line)
+        except IOError:
+            pass
+        self.run_command('settings set frame-format frame #${frame.index}: ${frame.pc}{ ${module.file.basename}`${function.name}{${function.pc-offset}}}{ at:${line.file.fullpath}:${line.number}}\n')
+        self.run_command('settings set auto-confirm 1')
 
     def run_command(self, commandline):
         if self._is_custom_command(commandline):
@@ -133,6 +151,29 @@ class Debugger(object):
             return return_obj.GetOutput()
         else:
             return ''
+
+    @property
+    def where(self):
+        def extract_where(backtrace):
+            where = None
+            pattern = re.compile('at:([^:]+):(\d+)')
+            backtrace_lines = backtrace.split('\n')
+            for line in backtrace_lines:
+                match_obj = pattern.search(line)
+                if match_obj:
+                    filepath = match_obj.group(1)
+                    linenumber = int(match_obj.group(2))
+                    if os.access(filepath, os.R_OK):
+                        where = FilePosition(filepath, linenumber)
+                        break
+            return where
+
+        where = None
+        self.run_command('bt')
+        debugger_output = self.debugger_output
+        if debugger_output is not None:
+            where = extract_where(debugger_output)
+        return where
 
     @property
     def program_stdout(self):
@@ -186,17 +227,6 @@ def main():
     executable = sys.argv[1]
     debugger = Debugger(executable)
 
-    # set debugger options
-    # -> first read lldbinit
-    try:
-        with open(os.path.expanduser('~/.lldbinit')) as f:
-            for line in f:
-                debugger.run_command(line)
-    except IOError:
-        pass
-    debugger.run_command('settings set thread-format ${file.fullpath}:${line.number}')
-    debugger.run_command('settings set auto-confirm 1')
-
     try:
         while True:
             line = raw_input()
@@ -211,6 +241,9 @@ def main():
             if program_stderr:
                 print(prefix_output(program_stderr, 'program_stderr: '))
             print(prefix_output(debugger.debugger_output, 'debugger_output: '))
+            where = debugger.where
+            if where:
+                print(prefix_output('{:s}:{:d}'.format(where.filepath, where.linenumber), 'where: '))
             print(prefix_output(debugger.program_state, 'program_state: '))
     except EOFError:
         print('Exiting')

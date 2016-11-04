@@ -56,8 +56,8 @@ endfunction
 
 function! vebugger#lldb#_readWhere(pipeName,line,readResult,debugger)
 	if 'out'==a:pipeName
-				\&&a:line=~'\v^debugger_output:'
-		let l:matches=matchlist(a:line,'\v^debugger_output:\s\*\s([^:]+):(\d+)')
+				\&&a:line=~'\v^where:'
+		let l:matches=matchlist(a:line,'\v^where:\s([^:]+):(\d+)')
 		if 2<len(l:matches)
 			let l:file=l:matches[1]
 			let l:file=fnamemodify(l:file,':~:.')
