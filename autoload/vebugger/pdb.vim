@@ -56,7 +56,7 @@ endfunction
 
 function! vebugger#pdb#_readWhere(pipeName,line,readResult,debugger)
 	if 'out'==a:pipeName
-		let l:matches=matchlist(a:line,'\v^\> (.+)\((\d+)\).*\(\)$')
+		let l:matches=matchlist(a:line,'\v^\> (.+)\((\d+)\).*\(\)%(-\>.*)?$')
 
 		if 2<len(l:matches)
 			let l:file=l:matches[1]
