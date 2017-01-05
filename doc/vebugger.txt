@@ -20,6 +20,7 @@ supports:
 Vebugger is built as a generic framework for building frontends for
 interactive shell debugger, and comes with implementations for:
 * GDB - doesn't need introdcution...
+* LLDB - debugger based on LLVM for C-family languages
 * JDB - a Java debugger
 * Mdbg - a .NET debugger(Windows only)
 * PDB - a Python module for debugging Python scripts
@@ -76,23 +77,31 @@ Example: >
 If a debugger is not in the PATH you can set the direct path to it by setting
 g:vebugger_path_XXX, where XXX is the executable used for the debugger:
 
-*g:vebugger_path_gdb*       defaults to "gdb"
-*g:vebugger_path_jdb*       defaults to "jdb"
-*g:vebugger_path_mdbg*      defaults to "Mdbg.exe"
-*g:vebugger_path_python*    defaults to "python"
-*g:vebugger_path_ruby*      defaults to "ruby"
+*g:vebugger_path_gdb*           defaults to "gdb"
+*g:vebugger_path_python_lldb*   defaults to "python2"
+*g:vebugger_path_jdb*           defaults to "jdb"
+*g:vebugger_path_mdbg*          defaults to "Mdbg.exe"
+*g:vebugger_path_python*        defaults to "python"
+*g:vebugger_path_ruby*          defaults to "ruby"
 
-Notice that for PDB and RDebug you use "python" and "ruby", since the debugger
-is actually a module bundled in the interpreter.
+Notice that for LLDB, PDB and RDebug you use "python_lldb", "python" and
+"ruby", since the debugger is actually a module bundled in the interpreter
+(LLDB is called by a python wrapper because the LLDB executable has no
+machine interface like GDB to interact with).
 
-You can set multiple versions for each debugger, by appending the version name
-to the debugger name with "_". These versions will be used when the "version"
-argument is supplied when running the debugger:
+You can set multiple versions for each debugger (except LLDB), by appending
+the version name to the debugger name with "_". These versions will be used
+when the "version" argument is supplied when running the debugger:
 
 *g:vebugger_path_python_2*  defaults to "python2"
 *g:vebugger_path_python_3*  defaults to "python3"
 *g:vebugger_path_mdbg_32*  No default - use it for the 32bit version of Mdbg
 *g:vebugger_path_mdbg_64*  No default - use it for the 64bit version of Mdbg
+
+For LLDB a special python variable is needed ("g:vebugger_path_python_lldb")
+since the lldb python api is only python 2 compatible. So, it is possible to
+use a python 2 interpreter for LLDB and another python version for PDB at
+the same time.
 
 When stepping into functions in unopened files, they are opened with :new by
 default. This can be configured by setting *g:vebugger_view_source_cmd*
@@ -152,6 +161,33 @@ attach to or the URL for a GDB-server to connect to.
 
 The *VBGstartGDBForD* command is the same as VBGstartGDB but for Dlang
 programs.
+
+
+LAUNCHING LLDB                                                *vebugger-lldb*
+
+LLDB can be launched with *vebugger#lldb#start*
+>
+    call vebugger#lldb#start('a.out',{'args':['hello','world']})
+<
+
+The supported extra arguments are:
+* "args": Command line arguments for the debugged program
+* "pid": Process id to attach to
+You can't specify both "args" and "pid".
+
+LLDB can also be launched with the *VBGstartLLDB* command:
+>
+    VBGstartLLDB a.out hello world
+<
+The *VBGattachLLDB* command searches for processes launched from the EXE to
+attach to, and attaches to them:
+>
+   VBGattachLLDB a.out
+<
+
+VBGattachLLDB accepts as a second argument the process ID of the process to
+attach to.
+
 
 LAUNCHING JDB                                                 *vebugger-jdb*
 
