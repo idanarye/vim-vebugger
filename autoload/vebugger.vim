@@ -17,7 +17,9 @@ function! s:f_debugger.kill() dict
     if self.shell.is_valid
         call self.addLineToTerminal('','== DEBUGGER TERMINATED ==')
     endif
-    let &updatetime=self.prevUpdateTime
+    if !has('timers')
+        let &updatetime=self.prevUpdateTime
+    endif
     call self.shell.kill(15)
     if exists('s:debugger')
         for l:closeHandler in s:debugger.closeHandlers
@@ -54,7 +56,9 @@ function! s:f_debugger.invokeReading() dict
                 \|| 'error'==l:checkpid[0]
         call self.kill()
     endif
-    call feedkeys("f\e", '\n') " Make sure the CursorHold event is refired even if the user does nothing
+    if !has('timers')
+        call feedkeys("f\e", '\n') " Make sure the CursorHold event is refired even if the user does nothing
+    endif
 endfunction
 
 "Handle a single line from the debugger's interactive shell
@@ -262,12 +266,19 @@ function! vebugger#createDebugger(command)
     let l:debugger.writeHandlers={}
     let l:debugger.closeHandlers=[]
 
-    let l:debugger.prevUpdateTime=&updatetime
+    if !has('timers')
+        let l:debugger.prevUpdateTime=&updatetime
+        set updatetime=500
+    endif
 
-    set updatetime=500
     return l:debugger
 endfunction
 
+if has('timers')
+    function! s:readingTimerCallback(timerId)
+        call s:debugger.invokeReading()
+    endfunction
+endif
 
 "Create a debugger and set it as the currently active debugger
 function! vebugger#startDebugger(command)
@@ -275,19 +286,30 @@ function! vebugger#startDebugger(command)
 
     let s:debugger=vebugger#createDebugger(a:command)
 
-    augroup vebugger_shell
-        autocmd!
-        autocmd CursorHold * call s:debugger.invokeReading()
-    augroup END
+    if has('timers')
+        let s:timerId = timer_start(500, function('s:readingTimerCallback'), {'repeat': -1})
+    else
+        augroup vebugger_shell
+            autocmd!
+            autocmd CursorHold * call s:debugger.invokeReading()
+        augroup END
+    endif
 
     return s:debugger
 endfunction
 
 "Terminate the currently active debugger
 function! vebugger#killDebugger()
-    augroup vebugger_shell
-        autocmd!
-    augroup END
+    if has('timers')
+        if exists('s:timerId')
+            call timer_stop(s:timerId)
+            unlet s:timerId
+        endif
+    else
+        augroup vebugger_shell
+            autocmd!
+        augroup END
+    endif
     if exists('s:debugger')
         call vebugger#std#closeShellBuffer(s:debugger)
         call s:debugger.closeTerminalBuffer()
