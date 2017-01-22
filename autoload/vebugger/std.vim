@@ -226,20 +226,52 @@ function! s:standardThinkHandlers.updateCallStack(readResult,debugger) dict
     endif
 endfunction
 
+"Helper print function; when using vim timers feedkeys ensures that messages
+"can be confirmend by the user.
+function! s:printWithFeedKeys(evaluatedExpression)
+    if empty(get(a:evaluatedExpression,'expression'))
+        let l:echo = a:evaluatedExpression.value
+    else
+        let l:echo = a:evaluatedExpression.expression.': '.a:evaluatedExpression.value
+    endif
+    let l:echoLines = split(l:echo, '\r\n\|\n\|\r')
+    if len(l:echoLines) == 1
+        call add(l:echoLines, '')
+    endif
+
+    if has('timers')
+        " Convert to an expression we can use with feedkeys.
+        " string(l:echo) won't do because it uses single-quotes which
+        " do not escape newlines
+        let l:echoJoinExpr = 'join('.string(l:echoLines).', "\n")'
+
+        let l:echoKeys = ':echo '.l:echoJoinExpr."\<Cr>"
+        if mode() == 'n'
+            " Call echo normaly
+            call feedkeys(l:echoKeys)
+        elseif mode() == 'i'
+            " Execute command in insert mode
+            call feedkeys("\<C-o>".l:echoKeys)
+        endif
+        " NOTE: Other modes are not supported
+    else
+        " Without timer support, feedkeys won't work and we have
+        " to echo directly
+        echo join(l:echoLines, "\n")
+    endif
+endfunction
+
 "Print an expression that it's evaluation was previously requested
 function! s:standardThinkHandlers.printEvaluatedExpression(readResult,debugger) dict
     let l:evaluatedExpression=a:readResult.std.evaluatedExpression
     if !empty(l:evaluatedExpression)
-        if empty(get(l:evaluatedExpression,'expression'))
-            echo l:evaluatedExpression.value."\n"
-        else
+        if !empty(get(l:evaluatedExpression,'expression'))
             let l:index=index(a:debugger.state.std.evaluateExpressions,l:evaluatedExpression.expression)
             if 0<=l:index
                 call remove(a:debugger.state.std.evaluateExpressions,l:index)
-                echo l:evaluatedExpression.expression.': '.l:evaluatedExpression.value."\n"
-                let g:echo=l:evaluatedExpression.expression.': '.l:evaluatedExpression.value."\n"
             endif
         endif
+        call s:printWithFeedKeys(l:evaluatedExpression)
         call a:debugger.addWriteAction('std','removeAfterDisplayed',a:readResult)
     endif
 endfunction
