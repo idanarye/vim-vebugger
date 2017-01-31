@@ -13,6 +13,7 @@ import platform
 import re
 import subprocess
 import sys
+import tempfile
 
 
 FilePosition = collections.namedtuple('FilePosition', ['filepath', 'linenumber'])
@@ -146,21 +147,24 @@ class Debugger(object):
 
     def _copy_stacktrace_to_clipboard(self, stacktrace):
         stacktrace_text = '\n'.join('File "{}", line {:d},'.format(file, line) for file, line in reversed(stacktrace))
-        platform_system = platform.system()
         process = None
-        if platform_system == 'Darwin':
-            process = subprocess.Popen('pbcopy', env={'LANG': 'en_US.UTF-8'}, stdin=subprocess.PIPE)
+        if 'TMUX' in os.environ:
+            process = subprocess.Popen(['tmux', 'load-buffer', '-'], stdin=subprocess.PIPE)
         else:
-            # assume we are running on Linux
-            for cmd in (['xclip', '-selection', 'clipboard'], ['xsel', '--clipboard']):
-                try:
-                    process = subprocess.Popen(cmd, stdin=subprocess.PIPE)
-                    break
-                except OSError:
-                    pass
+            platform_system = platform.system()
+            if platform_system == 'Darwin':
+                process = subprocess.Popen('pbcopy', env={'LANG': 'en_US.UTF-8'}, stdin=subprocess.PIPE)
             else:
-                print(prefix_output('Stacktrace cannot be copied to clipboard! Either install xclip or xsel.',
-                                    'warning: '))
+                # assume we are running on Linux
+                for cmd in (['xclip', '-selection', 'clipboard'], ['xsel', '--clipboard']):
+                    try:
+                        process = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+                        break
+                    except OSError:
+                        pass
+                else:
+                    print(prefix_output('Stacktrace cannot be copied to clipboard! Either install xclip or xsel.',
+                                        'warning: '))
         if process is not None:
             process.communicate(stacktrace_text.encode('utf-8'))
 
