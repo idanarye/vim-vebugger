@@ -253,7 +253,15 @@ function! vebugger#createDebugger(command)
         let l:options.err_io = 'out'
         let l:options.err_mode = 'raw'
 
-        let l:debugger.jobid = job_start(a:command, l:options)
+        let l:command = a:command
+        if has('unix')
+            if type(l:command) == type([])
+                let l:command = join(map(l:command, 'shellescape(v:val)'))
+            endif
+            let l:command = ['script', '-qfc', l:command, '/dev/null']
+        endif
+        echom string(l:command)
+        let l:debugger.jobid = job_start(l:command, l:options)
     endif
 
     let l:debugger.readResultTemplate={}
