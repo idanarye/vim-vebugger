@@ -14,13 +14,21 @@ let s:f_debugger={}
 
 "Terminate the debugger
 function! s:f_debugger.kill() dict
-    if self.shell.is_valid
-        call self.addLineToTerminal('','== DEBUGGER TERMINATED ==')
-    endif
     if !has('timers')
         let &updatetime=self.prevUpdateTime
     endif
-    call self.shell.kill(15)
+    if has('nvim')
+        try
+            call jobclose(self.jobid)
+            call self.addLineToTerminal('','== DEBUGGER TERMINATED ==')
+        catch /E900/
+        endtry
+    else
+        if self.shell.is_valid
+            call self.addLineToTerminal('','== DEBUGGER TERMINATED ==')
+        endif
+        call self.shell.kill(15)
+    endif
     if exists('s:debugger')
         for l:closeHandler in s:debugger.closeHandlers
             call l:closeHandler.handle(self)
@@ -30,8 +38,43 @@ endfunction
 
 "Write a line to the debugger's interactive shell
 function! s:f_debugger.writeLine(line) dict
-    call self.shell.stdin.write(a:line."\n")
+    if type(a:line) == type([])
+        let l:lines = a:line
+    else
+        let l:lines = split(a:line, '\r\n\|\n\|\r')
+    endif
+    call add(l:lines, '')
+    if has('nvim')
+        try
+            call jobsend(self.jobid, l:lines)
+        catch /E900/
+        endtry
+    else
+        call self.shell.stdin.write(join(l:lines, "\n"))
+    endif
 endfunction
+
+function! s:f_debugger._jobEventHandler(jobid, data, event) abort dict
+    if 'exit' == a:event
+        return self.kill()
+    elseif 'stdout' == a:event
+        let l:pipeName = 'out'
+    elseif 'stderr' == a:event
+        let l:pipeName = 'err'
+    else
+        throw 'Unknown event '.a:event
+    endif
+    " echo a:data
+    let l:pipe = self.pipes[l:pipeName]
+
+    let l:pipe.buffer .= join(a:data, "\n")
+
+    for l:line in l:pipe.bufferer()
+        call self.handleLine(l:pipeName, l:line)
+    endfor
+endfunction
+let s:f_debugger.on_stdout = s:f_debugger._jobEventHandler
+let s:f_debugger.on_stderr = s:f_debugger._jobEventHandler
 
 "Check for new lines from the debugger's interactive shell and handle them
 function! s:f_debugger.invokeReading() dict
@@ -240,22 +283,32 @@ endfunction
 
 "Create a bare debugger object from a raw shell line
 function! vebugger#createDebugger(command)
-
     let l:debugger=deepcopy(s:f_debugger)
 
-    let l:debugger.shell=vimproc#ptyopen(a:command,3)
-
-    let l:debugger.outBuffer=''
-    let l:debugger.errBuffer=''
-
     let l:debugger.pipes = {
-                \ 'out': {'pipe':(l:debugger.shell.stdout), 'buffer': ''},
-                \ 'err': {'pipe':(l:debugger.shell.stderr), 'buffer': '', 'annotation': "err:\t\t"}}
-    for l:pipe in values(l:debugger.pipes)
-        "let l:pipe.buffer = ''
-        "let l:pipe.readIntoBuffer = function('vebugger#readIntoBuffer')
-        "let l:pipe.bufferer = function('vebugger#readNewLinesFromPipe')
-    endfor
+                \ 'out': {'buffer': ''},
+                \ 'err': {'buffer': '', 'annotation': "err:\t\t"}}
+    let l:debugger.writeActions = {}
+    if has('nvim')
+        let l:debugger.pty = 1
+        let l:debugger.jobid = jobstart(a:command, l:debugger)
+    else
+        throw 'No Vim8 support yet'
+
+        let l:debugger.shell=vimproc#ptyopen(a:command,3)
+
+        let l:debugger.outBuffer=''
+        let l:debugger.errBuffer=''
+
+        let l:debugger.pipes = {
+                    \ 'out': {'pipe':(l:debugger.shell.stdout), 'buffer': ''},
+                    \ 'err': {'pipe':(l:debugger.shell.stderr), 'buffer': '', 'annotation': "err:\t\t"}}
+        for l:pipe in values(l:debugger.pipes)
+            "let l:pipe.buffer = ''
+            "let l:pipe.readIntoBuffer = function('vebugger#readIntoBuffer')
+            "let l:pipe.bufferer = function('vebugger#readNewLinesFromPipe')
+        endfor
+    endif
 
     let l:debugger.readResultTemplate={}
     let l:debugger.state={}
@@ -286,14 +339,14 @@ function! vebugger#startDebugger(command)
 
     let s:debugger=vebugger#createDebugger(a:command)
 
-    if has('timers')
-        let s:timerId = timer_start(500, function('s:readingTimerCallback'), {'repeat': -1})
-    else
-        augroup vebugger_shell
-            autocmd!
-            autocmd CursorHold * call s:debugger.invokeReading()
-        augroup END
-    endif
+    " if has('timers')
+        " let s:timerId = timer_start(500, function('s:readingTimerCallback'), {'repeat': -1})
+    " else
+        " augroup vebugger_shell
+            " autocmd!
+            " autocmd CursorHold * call s:debugger.invokeReading()
+        " augroup END
+    " endif
 
     return s:debugger
 endfunction

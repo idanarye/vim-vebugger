@@ -31,7 +31,7 @@ function! vebugger#pdb#start(entryFile,args)
 	return l:debugger
 endfunction
 
-function! vebugger#pdb#_readProgramOutput(pipeName,line,readResult,debugger) dict
+function! vebugger#pdb#_readProgramOutput(pipeName, line, readResult, debugger) dict
 	if 'out'==a:pipeName
 		if a:line=~"\\V\<C-[>[C" " After executing commands this seems to get appended...
 			let self.programOutputMode=1

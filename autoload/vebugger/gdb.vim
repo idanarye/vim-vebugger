@@ -9,7 +9,7 @@ function! vebugger#gdb#start(binaryFile,args)
 	call l:debugger.writeLine("set width 0")
 	call l:debugger.writeLine("set print pretty off")
 	call l:debugger.writeLine("set print array off")
-	call l:debugger.writeLine("define hook-stop\nwhere\nend")
+	call l:debugger.writeLine(['define hook-stop', 'where', 'end'])
 
 	if get(a:args,'pid') "Attach to process
 		call l:debugger.writeLine('attach '.string(a:args.pid))

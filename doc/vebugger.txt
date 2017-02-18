@@ -552,3 +552,5 @@ creation function:
 Example: >
 	let l:debugger.pipes.out.bufferer = function('g:myCustomBufferer')
 <
+
+
