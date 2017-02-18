@@ -1,10 +1,8 @@
 let g:vebugger_breakpoints=[]
 
 "Initialize the default pipe bufferers
-function! vebugger#std#setStandardBufferers(debugger)
-    for l:pipe in values(a:debugger.pipes)
-        let l:pipe.bufferer = function('vebugger#std#readNewLinesFromPipe')
-    endfor
+function! vebugger#std#setStandardBufferer(debugger)
+    let a:debugger.bufferer = function('vebugger#std#readNewLinesFromPipe')
 endfunction
 
 "Initialize the std part of the debugger's state
@@ -62,7 +60,7 @@ endfunction
 
 "Performs the standard initialization of the debugger object
 function! vebugger#std#standardInit(debugger)
-    call vebugger#std#setStandardBufferers(a:debugger)
+    call vebugger#std#setStandardBufferer(a:debugger)
     call vebugger#std#setStandardState(a:debugger)
     call vebugger#std#setStandardReadResultTemplate(a:debugger)
     call vebugger#std#setStandardWriteactionsTemplate(a:debugger)

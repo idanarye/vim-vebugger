@@ -86,31 +86,29 @@ function! s:findFilePath(src,fileName,methodName)
     return ''
 endfunction
 
-function! vebugger#mdbg#_readProgramOutput(pipeName,line,readResult,debugger)
+function! vebugger#mdbg#_readProgramOutput(line,readResult,debugger)
 endfunction
 
-function! vebugger#mdbg#_readWhere(pipeName,line,readResult,debugger)
-    if 'out'==a:pipeName
-	let l:matches=matchlist(a:line,'\v^\*(\d+)\.\s*([A-Za-z0-9_.+<>]+)\s*\((.+):(\d+)\)')
-	if 3<len(l:matches)
-	    let l:frameNumber=str2nr(l:matches[1])
-	    let l:file=s:findFilePath(a:debugger.state.mdbg.srcpath,l:matches[3],l:matches[2])
-	    let l:file=fnamemodify(l:file,':~:.')
-	    if 0==l:frameNumber " first stackframe is the current location
-		let a:readResult.std.location={
-			    \'file':(l:file),
-			    \'line':str2nr(l:matches[4])}
-	    endif
-	    let a:readResult.std.callstack={
-			\'clearOld':('0'==l:frameNumber),
-			\'add':'after',
+function! vebugger#mdbg#_readWhere(line,readResult,debugger)
+    let l:matches=matchlist(a:line,'\v^\*(\d+)\.\s*([A-Za-z0-9_.+<>]+)\s*\((.+):(\d+)\)')
+    if 3<len(l:matches)
+	let l:frameNumber=str2nr(l:matches[1])
+	let l:file=s:findFilePath(a:debugger.state.mdbg.srcpath,l:matches[3],l:matches[2])
+	let l:file=fnamemodify(l:file,':~:.')
+	if 0==l:frameNumber " first stackframe is the current location
+	    let a:readResult.std.location={
 			\'file':(l:file),
 			\'line':str2nr(l:matches[4])}
 	endif
+	let a:readResult.std.callstack={
+		    \'clearOld':('0'==l:frameNumber),
+		    \'add':'after',
+		    \'file':(l:file),
+		    \'line':str2nr(l:matches[4])}
     endif
 endfunction
 
-function! vebugger#mdbg#_readFinish(pipeName,line,readResult,debugger)
+function! vebugger#mdbg#_readFinish(line,readResult,debugger)
     if a:line=~'\VSTOP: Process Exited\$'
 	let a:readResult.std.programFinish={'finish':1}
     endif
@@ -145,15 +143,13 @@ function! vebugger#mdbg#_writeBreakpoints(writeAction,debugger)
     endfor
 endfunction
 
-function! vebugger#mdbg#_readBreakpointBound(pipeName,line,readResult,debugger)
-    if 'out'==a:pipeName
-	let l:matches=matchlist(a:line,'\vBreakpoint \#(\d+) bound\s*\(line (\d+) in ([^)]+)\)')
-	if 3<len(l:matches)
-	    let a:readResult.mdbg.breakpointBound={
-			\'fileNameTail':s:pathToVimStyle(l:matches[3]),
-			\'line':l:matches[2],
-			\'breakpointNumber':l:matches[1]}
-	endif
+function! vebugger#mdbg#_readBreakpointBound(line,readResult,debugger)
+    let l:matches=matchlist(a:line,'\vBreakpoint \#(\d+) bound\s*\(line (\d+) in ([^)]+)\)')
+    if 3<len(l:matches)
+	let a:readResult.mdbg.breakpointBound={
+		    \'fileNameTail':s:pathToVimStyle(l:matches[3]),
+		    \'line':l:matches[2],
+		    \'breakpointNumber':l:matches[1]}
     endif
 endfunction
 
@@ -185,15 +181,13 @@ function! vebugger#mdbg#_executeStatements(writeAction,debugger)
     endfor
 endfunction
 
-function! vebugger#mdbg#_readEvaluatedExpressions(pipeName,line,readResult,debugger) dict
-    if 'out'==a:pipeName
-	let l:matches=matchlist(a:line,'\v\[[^\]]*\]\s*mdbg\>\s*([^=]+)\=(.*)$')
-	if 2<len(l:matches)
-	    let l:expression=l:matches[1]
-	    let l:value=l:matches[2]
-	    let a:readResult.std.evaluatedExpression={
-			\'expression':l:expression,
-			\'value':l:value}
-	endif
+function! vebugger#mdbg#_readEvaluatedExpressions(line,readResult,debugger) dict
+    let l:matches=matchlist(a:line,'\v\[[^\]]*\]\s*mdbg\>\s*([^=]+)\=(.*)$')
+    if 2<len(l:matches)
+	let l:expression=l:matches[1]
+	let l:value=l:matches[2]
+	let a:readResult.std.evaluatedExpression={
+		    \'expression':l:expression,
+		    \'value':l:value}
     endif
 endfunction

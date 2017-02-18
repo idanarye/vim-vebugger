@@ -3,8 +3,8 @@ function! vebugger#pdb#start(entryFile,args)
 				\' ':'python',
 				\'2':'python2',
 				\'3':'python3'})
-	let l:debugger=vebugger#std#startDebugger(shellescape(l:debuggerExe)
-				\.' -m pdb '.a:entryFile.' '.vebugger#util#commandLineArgsForProgram(a:args))
+	let l:debugger=vebugger#std#startDebugger([l:debuggerExe,
+				\ '-m', 'pdb', a:entryFile] + vebugger#util#commandLineArgsForProgramList(a:args))
 
 	let l:debugger.state.pdb={}
 
@@ -31,46 +31,40 @@ function! vebugger#pdb#start(entryFile,args)
 	return l:debugger
 endfunction
 
-function! vebugger#pdb#_readProgramOutput(pipeName, line, readResult, debugger) dict
-	if 'out'==a:pipeName
-		if a:line=~"\\V\<C-[>[C" " After executing commands this seems to get appended...
-			let self.programOutputMode=1
-			return
-		endif
-		if a:line=~'\v^\>'
-					\||a:line=~'\V\^(Pdb)' "We don't want to print this particular line...
-					\||a:line=='--Return--'
-					\||a:line=='The program finished and will be restarted'
-			let self.programOutputMode=0
-		endif
-		if get(self,'programOutputMode')
-			let a:readResult.std.programOutput={'line':a:line}
-		endif
-		if a:line=~'\v^\(Pdb\) (n|s|r|cont)'
-			let self.programOutputMode=1
-		endif
-	else
+function! vebugger#pdb#_readProgramOutput(line, readResult, debugger) dict
+	if a:line=~"\\V\<C-[>[C" " After executing commands this seems to get appended...
+		let self.programOutputMode=1
+		return
+	endif
+	if a:line=~'\v^\>'
+				\||a:line=~'\V\^(Pdb)' "We don't want to print this particular line...
+				\||a:line=='--Return--'
+				\||a:line=='The program finished and will be restarted'
+		let self.programOutputMode=0
+	endif
+	if get(self,'programOutputMode')
 		let a:readResult.std.programOutput={'line':a:line}
 	endif
+	if a:line=~'\v^\(Pdb\) (n|s|r|cont)'
+		let self.programOutputMode=1
+	endif
 endfunction
 
-function! vebugger#pdb#_readWhere(pipeName,line,readResult,debugger)
-	if 'out'==a:pipeName
-		let l:matches=matchlist(a:line,'\v^\> (.+)\((\d+)\).*\(\)%(-\>.*)?$')
+function! vebugger#pdb#_readWhere(line,readResult,debugger)
+	let l:matches=matchlist(a:line,'\v^%(\(Pdb\) )?\> (.+)\((\d+)\).*\(\)%(-\>.*)?$')
 
-		if 2<len(l:matches)
-			let l:file=l:matches[1]
-			if !empty(glob(l:file))
-				let l:line=str2nr(l:matches[2])
-				let a:readResult.std.location={
-							\'file':(l:file),
-							\'line':(l:line)}
-			endif
+	if 2<len(l:matches)
+		let l:file=l:matches[1]
+		if !empty(glob(l:file))
+			let l:line=str2nr(l:matches[2])
+			let a:readResult.std.location={
+						\'file':(l:file),
+						\'line':(l:line)}
 		endif
 	endif
 endfunction
 
-function! vebugger#pdb#_readFinish(pipeName,line,readResult,debugger)
+function! vebugger#pdb#_readFinish(line,readResult,debugger)
 	if a:line=='The program finished and will be restarted'
 		let a:readResult.std.programFinish={'finish':1}
 	endif
@@ -116,20 +110,18 @@ function! vebugger#pdb#_executeStatements(writeAction,debugger)
 	endfor
 endfunction
 
-function! vebugger#pdb#_readEvaluatedExpressions(pipeName,line,readResult,debugger) dict
-	if 'out'==a:pipeName
-		if has_key(self,'expression') "Reading the actual value to print
-			let l:value=a:line
-			let a:readResult.std.evaluatedExpression={
-						\'expression':(self.expression),
-						\'value':(l:value)}
-			"Reset the state
-			unlet self.expression
-		else "Check if the next line is the eval result
-			let l:matches=matchlist(a:line,'\v^\(Pdb\) p (.*)$')
-			if 1<len(l:matches)
-				let self.expression=l:matches[1]
-			endif
+function! vebugger#pdb#_readEvaluatedExpressions(line,readResult,debugger) dict
+	if has_key(self,'expression') "Reading the actual value to print
+		let l:value=a:line
+		let a:readResult.std.evaluatedExpression={
+					\'expression':(self.expression),
+					\'value':(l:value)}
+		"Reset the state
+		unlet self.expression
+	else "Check if the next line is the eval result
+		let l:matches=matchlist(a:line,'\v^\(Pdb\) p (.*)$')
+		if 1<len(l:matches)
+			let self.expression=l:matches[1]
 		endif
 	endif
 endfunction

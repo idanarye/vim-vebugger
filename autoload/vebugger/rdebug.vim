@@ -1,17 +1,16 @@
 function! vebugger#rdebug#start(entryFile,args)
-	let l:debugger=vebugger#std#startDebugger(shellescape(vebugger#util#getToolFullPath('ruby',get(a:args,'version'),'ruby'))
-				\.' -rdebug '.a:entryFile.' '.vebugger#util#commandLineArgsForProgram(a:args))
+	let l:debugger=vebugger#std#startDebugger([vebugger#util#getToolFullPath('ruby',get(a:args,'version'),'ruby'),
+				\ '-rdebug', a:entryFile] + vebugger#util#commandLineArgsForProgramList(a:args))
 	let l:debugger.state.rdebug={}
 	let l:debugger.state.std.config.externalFileStop_flowCommand='stepover' "skip external modules
 
 
-	call l:debugger.writeLine("$stdout=$stderr")
-	let l:debugger.pipes.err.annotation = "err&prg\t\t"
+	" call l:debugger.writeLine("$stdout=$stderr")
 	if !has('win32')
 		call vebugger#std#openShellBuffer(l:debugger)
 	endif
 
-	call l:debugger.addReadHandler(function('vebugger#rdebug#_readProgramOutput'))
+	" call l:debugger.addReadHandler(function('vebugger#rdebug#_readProgramOutput'))
 	call l:debugger.addReadHandler(function('vebugger#rdebug#_readWhere'))
 	call l:debugger.addReadHandler(function('vebugger#rdebug#_readEvaluatedExpressions'))
 
@@ -28,24 +27,22 @@ function! vebugger#rdebug#start(entryFile,args)
 	return l:debugger
 endfunction
 
-function! vebugger#rdebug#_readProgramOutput(pipeName,line,readResult,debugger)
-	if 'err'==a:pipeName
-		let a:readResult.std.programOutput={'line':a:line}
-	endif
-endfunction
+" function! vebugger#rdebug#_readProgramOutput(pipeName,line,readResult,debugger)
+	" if 'err'==a:pipeName
+		" let a:readResult.std.programOutput={'line':a:line}
+	" endif
+" endfunction
 
-function! vebugger#rdebug#_readWhere(pipeName,line,readResult,debugger)
-	if 'out'==a:pipeName
-		let l:matches=matchlist(a:line,'\v^([^:]+)\:(\d+)\:(.*)$')
+function! vebugger#rdebug#_readWhere(line,readResult,debugger)
+	let l:matches=matchlist(a:line,'\v^([^:]+)\:(\d+)\:(.*)$')
 
-		if 3<len(l:matches)
-			let l:file=l:matches[1]
-			if !empty(glob(l:file))
-				let l:line=str2nr(l:matches[2])
-				let a:readResult.std.location={
-							\'file':(l:file),
-							\'line':(l:line)}
-			endif
+	if 3<len(l:matches)
+		let l:file=l:matches[1]
+		if !empty(glob(l:file))
+			let l:line=str2nr(l:matches[2])
+			let a:readResult.std.location={
+						\'file':(l:file),
+						\'line':(l:line)}
 		endif
 	endif
 endfunction
@@ -87,18 +84,16 @@ function! vebugger#rdebug#_executeStatements(writeAction,debugger)
 	endfor
 endfunction
 
-function! vebugger#rdebug#_readEvaluatedExpressions(pipeName,line,readResult,debugger)
-	if 'out'==a:pipeName
-		let l:matches=matchlist(a:line,'\v^(\d+)\: (.*) \= (.*)$')
-		if 4<len(l:matches)
-			let l:id=str2nr(l:matches[1])
-			let l:expression=l:matches[2]
-			let l:value=l:matches[3]
-			let a:readResult.std.evaluatedExpression={
-						\'id':(l:id),
-						\'expression':(l:expression),
-						\'value':(l:value)}
-		endif
+function! vebugger#rdebug#_readEvaluatedExpressions(line,readResult,debugger)
+	let l:matches=matchlist(a:line,'\v^(\d+)\: (.*) \= (.*)$')
+	if 4<len(l:matches)
+		let l:id=str2nr(l:matches[1])
+		let l:expression=l:matches[2]
+		let l:value=l:matches[3]
+		let a:readResult.std.evaluatedExpression={
+					\'id':(l:id),
+					\'expression':(l:expression),
+					\'value':(l:value)}
 	endif
 endfunction
 

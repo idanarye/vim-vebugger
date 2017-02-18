@@ -14,20 +14,14 @@ let s:f_debugger={}
 
 "Terminate the debugger
 function! s:f_debugger.kill() dict
-    if !has('timers')
-        let &updatetime=self.prevUpdateTime
-    endif
     if has('nvim')
         try
             call jobclose(self.jobid)
-            call self.addLineToTerminal('','== DEBUGGER TERMINATED ==')
+            call self.addLineToTerminal('== DEBUGGER TERMINATED ==')
         catch /E900/
         endtry
     else
-        if self.shell.is_valid
-            call self.addLineToTerminal('','== DEBUGGER TERMINATED ==')
-        endif
-        call self.shell.kill(15)
+        call job_stop(self.jobid)
     endif
     if exists('s:debugger')
         for l:closeHandler in s:debugger.closeHandlers
@@ -50,72 +44,40 @@ function! s:f_debugger.writeLine(line) dict
         catch /E900/
         endtry
     else
-        call self.shell.stdin.write(join(l:lines, "\n"))
+        call ch_sendraw(self.jobid, join(l:lines, "\n"))
     endif
 endfunction
 
-function! s:f_debugger._jobEventHandler(jobid, data, event) abort dict
-    if 'exit' == a:event
-        return self.kill()
-    elseif 'stdout' == a:event
-        let l:pipeName = 'out'
-    elseif 'stderr' == a:event
-        let l:pipeName = 'err'
-    else
-        throw 'Unknown event '.a:event
-    endif
-    " echo a:data
-    let l:pipe = self.pipes[l:pipeName]
+if has('nvim')
+    function! s:f_debugger.on_stdout(jobid, data, event) abort dict
+        let self.buffer .= join(a:data, "\n")
 
-    let l:pipe.buffer .= join(a:data, "\n")
-
-    for l:line in l:pipe.bufferer()
-        call self.handleLine(l:pipeName, l:line)
-    endfor
-endfunction
-let s:f_debugger.on_stdout = s:f_debugger._jobEventHandler
-let s:f_debugger.on_stderr = s:f_debugger._jobEventHandler
-
-"Check for new lines from the debugger's interactive shell and handle them
-function! s:f_debugger.invokeReading() dict
-    let l:newLines = {}
-    for l:k in keys(self.pipes)
-        let l:pipe = self.pipes[l:k]
-        if 0 < s:fillBufferFromPipe(l:pipe)
-            let l:nl = l:pipe.bufferer()
-            if 0 < len(l:nl)
-                let l:newLines[l:k] = l:nl
-            endif
-        endif
-    endfor
-    for l:k in keys(l:newLines)
-        for l:line in l:newLines[l:k]
-            call self.handleLine(l:k, l:line)
+        for l:line in self.bufferer()
+            call self.handleLine(l:line)
         endfor
-    endfor
+    endfunction
+else " Vim8 jobs
+    function! s:f_debugger.out_cb(hannel, msg) abort dict
+        let self.buffer .= a:msg
 
-    let l:checkpid=self.shell.checkpid()
-    if 'exit'==l:checkpid[0]
-                \|| 'error'==l:checkpid[0]
-        call self.kill()
-    endif
-    if !has('timers')
-        call feedkeys("f\e", '\n') " Make sure the CursorHold event is refired even if the user does nothing
-    endif
-endfunction
+        for l:line in self.bufferer()
+            call self.handleLine(l:line)
+        endfor
+    endfunction
+endif
 
 "Handle a single line from the debugger's interactive shell
-function! s:f_debugger.handleLine(pipeName,line) dict
-    call self.addLineToTerminal(a:pipeName,a:line)
+function! s:f_debugger.handleLine(line) dict
+    call self.addLineToTerminal(a:line)
 
     let l:readResult=deepcopy(self.readResultTemplate,1)
 
     for l:readHandler in self.readHandlers
-        call l:readHandler.handle(a:pipeName,a:line,l:readResult,self)
+        call l:readHandler.handle(a:line, l:readResult,self)
     endfor
 
     for l:thinkHandler in self.thinkHandlers
-        call l:thinkHandler.handle(l:readResult,self)
+        call l:thinkHandler.handle(l:readResult, self)
     endfor
 
     call self.performWriteActions()
@@ -186,18 +148,12 @@ function! s:f_debugger.toggleTerminalBuffer() dict
 endfunction
 
 "Write a line to the terminal buffer. This function does not process the line
-function! s:f_debugger.addLineToTerminal(pipeName,line) dict
-    if has_key(self,'terminalBuffer')
-        let l:bufwin=bufwinnr(self.terminalBuffer)
+function! s:f_debugger.addLineToTerminal(line) dict
+    if has_key(self, 'terminalBuffer')
+        let l:bufwin = bufwinnr(self.terminalBuffer)
         if -1<l:bufwin
             exe l:bufwin.'wincmd w'
-            if has_key(self,'pipes')
-                        \&&has_key(self.pipes,a:pipeName)
-                        \&&has_key(self.pipes[a:pipeName],'annotation')
-                call append (line('$'),(self.pipes[a:pipeName].annotation).(a:line))
-            else
-                call append (line('$'),a:line)
-            endif
+            call append (line('$') ,a:line)
             normal G
             wincmd p
         endif
@@ -209,7 +165,7 @@ function! s:addHandler(list,handler)
     if type(a:handler) == type({})
         call add(a:list,a:handler)
     elseif type(a:handler) == type(function('tr'))
-        call add(a:list,{'handle':a:handler})
+        call add(a:list,{'handle': a:handler})
     endif
 endfunction
 
@@ -285,29 +241,19 @@ endfunction
 function! vebugger#createDebugger(command)
     let l:debugger=deepcopy(s:f_debugger)
 
-    let l:debugger.pipes = {
-                \ 'out': {'buffer': ''},
-                \ 'err': {'buffer': '', 'annotation': "err:\t\t"}}
+    let l:debugger.buffer = ''
     let l:debugger.writeActions = {}
     if has('nvim')
         let l:debugger.pty = 1
         let l:debugger.jobid = jobstart(a:command, l:debugger)
     else
-        throw 'No Vim8 support yet'
+        let l:options = {}
+        let l:options.out_cb = function(l:debugger.out_cb, [], l:debugger)
+        let l:options.out_mode = 'raw'
+        let l:options.err_io = 'out'
+        let l:options.err_mode = 'raw'
 
-        let l:debugger.shell=vimproc#ptyopen(a:command,3)
-
-        let l:debugger.outBuffer=''
-        let l:debugger.errBuffer=''
-
-        let l:debugger.pipes = {
-                    \ 'out': {'pipe':(l:debugger.shell.stdout), 'buffer': ''},
-                    \ 'err': {'pipe':(l:debugger.shell.stderr), 'buffer': '', 'annotation': "err:\t\t"}}
-        for l:pipe in values(l:debugger.pipes)
-            "let l:pipe.buffer = ''
-            "let l:pipe.readIntoBuffer = function('vebugger#readIntoBuffer')
-            "let l:pipe.bufferer = function('vebugger#readNewLinesFromPipe')
-        endfor
+        let l:debugger.jobid = job_start(a:command, l:options)
     endif
 
     let l:debugger.readResultTemplate={}
@@ -319,19 +265,8 @@ function! vebugger#createDebugger(command)
     let l:debugger.writeHandlers={}
     let l:debugger.closeHandlers=[]
 
-    if !has('timers')
-        let l:debugger.prevUpdateTime=&updatetime
-        set updatetime=500
-    endif
-
     return l:debugger
 endfunction
-
-if has('timers')
-    function! s:readingTimerCallback(timerId)
-        call s:debugger.invokeReading()
-    endfunction
-endif
 
 "Create a debugger and set it as the currently active debugger
 function! vebugger#startDebugger(command)
@@ -339,30 +274,11 @@ function! vebugger#startDebugger(command)
 
     let s:debugger=vebugger#createDebugger(a:command)
 
-    " if has('timers')
-        " let s:timerId = timer_start(500, function('s:readingTimerCallback'), {'repeat': -1})
-    " else
-        " augroup vebugger_shell
-            " autocmd!
-            " autocmd CursorHold * call s:debugger.invokeReading()
-        " augroup END
-    " endif
-
     return s:debugger
 endfunction
 
 "Terminate the currently active debugger
 function! vebugger#killDebugger()
-    if has('timers')
-        if exists('s:timerId')
-            call timer_stop(s:timerId)
-            unlet s:timerId
-        endif
-    else
-        augroup vebugger_shell
-            autocmd!
-        augroup END
-    endif
     if exists('s:debugger')
         call vebugger#std#closeShellBuffer(s:debugger)
         call s:debugger.closeTerminalBuffer()
@@ -411,13 +327,6 @@ endfunction
 function! vebugger#writeLine(line)
     if exists('s:debugger')
         call s:debugger.writeLine(a:line)
-    endif
-endfunction
-
-"Invoke reading for the currently active debugger
-function! vebugger#invokeReading()
-    if exists('s:debugger')
-        call s:debugger.invokeReading()
     endif
 endfunction
 

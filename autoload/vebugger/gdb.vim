@@ -1,11 +1,11 @@
 function! vebugger#gdb#start(binaryFile,args)
-	let l:debugger=vebugger#std#startDebugger(shellescape(vebugger#util#getToolFullPath('gdb',get(a:args,'version'),'gdb'))
-				\.' -i mi --silent '.fnameescape(a:binaryFile))
-	let l:debugger.pipes.out.bufferer = function('vebugger#gdb#readMILinesFromPipe')
+	let l:debugger=vebugger#std#startDebugger([vebugger#util#getToolFullPath('gdb',get(a:args,'version'),'gdb'),
+				\ '-i', 'mi', '--silent', a:binaryFile])
+	let l:debugger.bufferer = function('vebugger#gdb#readMILinesFromPipe')
 	let l:debugger.state.gdb={}
+	let g:debugger = l:debugger
 
 
-	let l:debugger.pipes.err.annotation = "err&prg\t\t"
 	call l:debugger.writeLine("set width 0")
 	call l:debugger.writeLine("set print pretty off")
 	call l:debugger.writeLine("set print array off")
@@ -30,7 +30,7 @@ function! vebugger#gdb#start(binaryFile,args)
 	end
 
 
-	call l:debugger.addReadHandler(function('vebugger#gdb#_readProgramOutput'))
+	" call l:debugger.addReadHandler(function('vebugger#gdb#_readProgramOutput'))
 	call l:debugger.addReadHandler(function('vebugger#gdb#_readWhere'))
 	call l:debugger.addReadHandler(function('vebugger#gdb#_readFinish'))
 	call l:debugger.addReadHandler(function('vebugger#gdb#_readEvaluatedExpressions'))
@@ -115,28 +115,26 @@ function! vebugger#gdb#readMILinesFromPipe() dict
 	return l:result
 endfunction
 
-function! vebugger#gdb#_readProgramOutput(pipeName,line,readResult,debugger)
-	if 'err'==a:pipeName
-				\&&a:line!~'\v^[=~*&^]'
-				\&&a:line!~'\V(gdb)'
-		let a:readResult.std.programOutput={'line':a:line}
+" function! vebugger#gdb#_readProgramOutput(pipeName,line,readResult,debugger)
+	" if 'err'==a:pipeName
+				" \&&a:line!~'\v^[=~*&^]'
+				" \&&a:line!~'\V(gdb)'
+		" let a:readResult.std.programOutput={'line':a:line}
+	" endif
+" endfunction
+
+function! vebugger#gdb#_readWhere(line, readResult, debugger)
+	let l:matches = matchlist(a:line,'\v^\*stopped.*fullname\=\"([^"]+)\",line\=\"(\d+)"')
+	if 2<len(l:matches)
+		let l:file=l:matches[1]
+		let l:file=fnamemodify(l:file,':~:.')
+		let a:readResult.std.location={
+					\'file':(l:file),
+					\'line':str2nr(l:matches[2])}
 	endif
 endfunction
 
-function! vebugger#gdb#_readWhere(pipeName,line,readResult,debugger)
-	if 'out'==a:pipeName
-		let l:matches=matchlist(a:line,'\v^\*stopped.*fullname\=\"([^"]+)\",line\=\"(\d+)"')
-		if 2<len(l:matches)
-			let l:file=l:matches[1]
-			let l:file=fnamemodify(l:file,':~:.')
-			let a:readResult.std.location={
-						\'file':(l:file),
-						\'line':str2nr(l:matches[2])}
-		endif
-	endif
-endfunction
-
-function! vebugger#gdb#_readFinish(pipeName,line,readResult,debugger)
+function! vebugger#gdb#_readFinish(line,readResult,debugger)
 	if a:line=~'\c\V*stopped\.\*exited\[ -]normally'
 		let a:readResult.std.programFinish={'finish':1}
 	endif
@@ -183,23 +181,21 @@ function! vebugger#gdb#_executeStatements(writeAction,debugger)
 	endfor
 endfunction
 
-function! vebugger#gdb#_readEvaluatedExpressions(pipeName,line,readResult,debugger) dict
-	if 'out' == a:pipeName
-		if has_key(self, 'nextExpressionToBePrinted')
-			let l:matches=matchlist(a:line,'\v^\~\$(\d+) \= (.*)$')
-			if 2<len(l:matches)
-				let l:expression=l:matches[1]
-				let l:value=l:matches[2]
-				let a:readResult.std.evaluatedExpression={
-							\'expression':self.nextExpressionToBePrinted,
-							\'value':(s:unescapeString(l:value))}
-			endif
-			call remove(self,'nextExpressionToBePrinted')
-		else
-			let l:matches=matchlist(a:line,'\v^\&print (.+)$')
-			if 1<len(l:matches)
-				let self.nextExpressionToBePrinted=s:unescapeString(l:matches[1])
-			endif
+function! vebugger#gdb#_readEvaluatedExpressions(line,readResult,debugger) dict
+	if has_key(self, 'nextExpressionToBePrinted')
+		let l:matches=matchlist(a:line,'\v^\~\$(\d+) \= (.*)$')
+		if 2<len(l:matches)
+			let l:expression=l:matches[1]
+			let l:value=l:matches[2]
+			let a:readResult.std.evaluatedExpression={
+						\'expression':self.nextExpressionToBePrinted,
+						\'value':(s:unescapeString(l:value))}
+		endif
+		call remove(self,'nextExpressionToBePrinted')
+	else
+		let l:matches=matchlist(a:line,'\v^\&print (.+)$')
+		if 1<len(l:matches)
+			let self.nextExpressionToBePrinted=s:unescapeString(l:matches[1])
 		endif
 	endif
 endfunction

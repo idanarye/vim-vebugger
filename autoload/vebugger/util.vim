@@ -62,18 +62,23 @@ function! vebugger#util#selectProcessOfFile(ofFile)
 	endif
 endfunction
 
+"Extract args as a command line arguments string
+function! vebugger#util#commandLineArgsForProgramList(debuggerArgs)
+	if has_key(a:debuggerArgs,'args')
+		if type(a:debuggerArgs.args)==type([])
+			return a:debuggerArgs.args
+		elseif type(a:debuggerArgs.args)==type('')
+			return [a:debuggerArgs.args]
+		else
+			return [string(a:debuggerArgs.args)]
+		endif
+	endif
+	return []
+endfunction
 "Escape args(from a debugger's extra arguments) as a command line arguments
 "string
 function! vebugger#util#commandLineArgsForProgram(debuggerArgs)
-	if has_key(a:debuggerArgs,'args')
-		if type(a:debuggerArgs.args)==type([])
-			return join(map(a:debuggerArgs.args,'s:argEscape(v:val)'),' ')
-		elseif type(a:debuggerArgs.args)==type('')
-			return a:debuggerArgs.args
-		else
-			return string(a:debuggerArgs.args)
-		endif
-	endif
+	return join(map(vebugger#util#commandLineArgsForProgramList(a:debuggerArgs), 's:argEscape(v:val)'), ' ')
 endfunction
 
 "Escape a single argument for the command line
