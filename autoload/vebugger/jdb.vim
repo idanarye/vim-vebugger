@@ -1,7 +1,17 @@
 function! vebugger#jdb#start(entryClass,args)
-	let l:debugger=vebugger#std#startDebugger(shellescape(vebugger#util#getToolFullPath('jdb',get(a:args,'version'),'jdb'))
-				\.(has_key(a:args,'classpath') ? ' -classpath '.fnameescape(a:args.classpath) : ''))
+  let l:classpath = (has_key(a:args,'classpath') ? fnameescape(a:args.classpath) : '')
+  let l:jdb_command = shellescape(vebugger#util#getToolFullPath('jdb',get(a:args,'version'),'jdb'))
+
+  doautocmd User Vebugger_PreStartDebugger
+
+  if has_key(g:, 'vebugger_extra_classpath')
+    let l:classpath = l:classpath . ':' . g:vebugger_extra_classpath
+  endif
+
+  let l:debugger=vebugger#std#startDebugger(l:jdb_command . ' -classpath ' . l:classpath)
 	let l:debugger.state.jdb={}
+  let l:debugger.state.jdb.classpath = l:classpath
+
 	if has_key(a:args,'srcpath')
 		let l:debugger.state.jdb.srcpath=a:args.srcpath
 	else
