@@ -151,25 +151,13 @@ function! vebugger#jdb#_writeFlow(writeAction,debugger)
 	endif
 endfunction
 
-function! s:getClassNameFromFile(filename)
-	let l:className=fnamemodify(a:filename,':t:r') " Get only the name of the file, without path or extension
-	for l:line in readfile(a:filename)
-    " trailing ; is optional to make it work for groovy as well
-		let l:matches=matchlist(l:line,'\vpackage\s+(%(\w|\.)+)\s*;?')
-		if 1<len(l:matches)
-			return l:matches[1].'.'.l:className
-		endif
-	endfor
-	return l:className
-endfunction
-
 function! vebugger#jdb#_writeBreakpoints(writeAction,debugger)
 	for l:breakpoint in a:writeAction
 		let l:class=''
 		if has_key(a:debugger.state.jdb.filesToClassesMap,l:breakpoint.file)
 			let l:class=a:debugger.state.jdb.filesToClassesMap[l:breakpoint.file]
 		else
-			let l:class=s:getClassNameFromFile(l:breakpoint.file)
+			let l:class=vebugger#util#getClassFromFilename(l:breakpoint.file)
 			let a:debugger.state.jdb.filesToClassesMap[l:breakpoint.file]=l:class
 		endif
 

@@ -1,4 +1,17 @@
 
+
+function! vebugger#util#getClassFromFilename(filename)
+    let l:className=fnamemodify(a:filename,':t:r') " Get only the name of the file, without path or extension
+    for l:line in readfile(a:filename)
+      " trailing ; is optional to make it work for groovy as well
+      let l:matches=matchlist(l:line,'\vpackage\s+(%(\w|\.)+)\s*;?')
+      if 1<len(l:matches)
+        return l:matches[1].'.'.l:className
+      endif
+    endfor
+    return l:className
+endfunction
+
 "Returns the visually selected text
 function! vebugger#util#get_visual_selection()
 	"Shamefully stolen from http://stackoverflow.com/a/6271254/794380
