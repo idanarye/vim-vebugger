@@ -39,7 +39,7 @@ function! vebugger#jdb#start(entryClass,args)
 	call l:debugger.generateWriteActionsFromTemplate()
 
 	call l:debugger.std_addAllBreakpointActions(g:vebugger_breakpoints)
-
+  doautocmd User Vebugger_DebuggerActive
 	return l:debugger
 endfunction
 
