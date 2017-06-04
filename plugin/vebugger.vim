@@ -12,7 +12,7 @@ command! -nargs=0 VBGcontinue call vebugger#userAction('setWriteActionAndPerform
 
 command! -nargs=0 VBGtoggleTerminalBuffer call vebugger#userAction('toggleTerminalBuffer')
 command! -nargs=+ -complete=file VBGtoggleBreakpoint call vebugger#std#toggleBreakpoint(<f-args>)
-command! -nargs=0 VBGtoggleBreakpointThisLine call vebugger#std#toggleBreakpoint(expand('%:~:.'),line('.'))
+command! -nargs=0 VBGtoggleBreakpointThisLine call vebugger#std#toggleBreakpoint(expand('%:p:.'),line('.'))
 command! -nargs=0 VBGclearBreakpoints call vebugger#std#clearBreakpoints()
 
 command! -nargs=1 VBGeval call vebugger#userAction('std_eval', <q-args>)
