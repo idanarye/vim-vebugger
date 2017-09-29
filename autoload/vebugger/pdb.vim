@@ -1,4 +1,10 @@
 function! vebugger#pdb#start(entryFile,args)
+	let l:pyenv_path=glob('~/.pyenv/versions/'.expand('%:h:t').'/bin/python')
+
+	if !empty(l:pyenv_path)
+		let g:vebugger_path_python=l:pyenv_path
+	endif
+
 	let l:debuggerExe=vebugger#util#getToolFullPath('python',get(a:args,'version'),{
 				\' ':'python',
 				\'2':'python2',
