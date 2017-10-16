@@ -87,7 +87,7 @@ function! s:findFolderFromStackTrace(src,nameFromStackTrace,frameNumber)
   endif
 
   " If no such tag was found, try to find it using the src path.
-  for l:one_path in split(a:src, ':')
+  for l:one_path in vebugger#util#listify(a:src)
     let l:path=l:one_path
     for l:dirname in split(a:nameFromStackTrace,'\.')
       let l:nextPath=l:path.'/'.fnameescape(l:dirname)
