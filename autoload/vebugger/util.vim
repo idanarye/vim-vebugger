@@ -115,3 +115,12 @@ function! vebugger#util#isPathAbsolute(path)
 		return a:path[0]=~'\v^[/~$]' "Absolute paths in Linux start with ~(home),/(root dir) or $(environment variable)
 	endif
 endfunction
+
+function! vebugger#util#listify(stringOrList)
+    if type(a:stringOrList) == type([])
+        return copy(a:stringOrList) " so it could safely be modified by map&filter
+    else
+        return [a:stringOrList]
+    endif
+endfunction
+

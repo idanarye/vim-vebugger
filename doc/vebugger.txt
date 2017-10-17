@@ -202,13 +202,17 @@ Unlike in the other debuggers, the first argument here is not the name of a
 file - it's the name of the class to run. The supported extra arguments are:
 * "args": Command line arguments for the debugged program
 * "classpath": Where to look for class files
-* "srcpath": Where to look for source files
+* "srcpath": Where to look for source files. You can have multiple srcpaths, passed as a list
 * "version": The version of the debugger to run
 If you don't supply "classpath" and "srcpath", Vebugger will assume you are
 using the current directory for source files and class files.
 
 JDB does not have a command for starting it, since you usually want to supply
 "classpath" and "srcpath".
+
+If you need Vebugger to search for the source files in multiple locations, you can
+specify `srcpath` as a list. Vebugger will search on all these folders
+and the first match will be returned as the Source file to be shown.
 
 
 LAUNCHING RDEBUG                                             *vebugger-rdebug*
