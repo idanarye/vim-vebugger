@@ -116,6 +116,7 @@ function! vebugger#std#openShellBuffer(debugger)
     let b:debugger=a:debugger
     autocmd BufDelete <buffer> if exists('b:debugger') | call b:debugger.kill() | endif
     setlocal buftype=nofile
+    setlocal filetype=VebuggerShell
     setlocal bufhidden=wipe
     let a:debugger.shellBuffer=bufnr('')
     silent file Vebugger:Shell
