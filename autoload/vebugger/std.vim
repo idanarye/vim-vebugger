@@ -307,13 +307,13 @@ let s:currentline_text = get(g:, 'vebugger_currentline_text', '**')
 if hlexists("DebuggedLine")
   sign define vebugger_current linehl=DebuggedLine
 else
-  exe 'sign define vebugger_current text=' . s:currentline_text
+  execute 'sign define vebugger_current text=' . s:currentline_text
 endif
 
 if hlexists('BreakPoint')
-    exe 'sign define vebugger_breakpoint text=' . s:breakpoint_text . ' linehl=BreakPoint texthl=BreakPoint'
+    execute 'sign define vebugger_breakpoint text=' . s:breakpoint_text . ' linehl=BreakPoint texthl=BreakPoint'
 else
-    exe 'sign define vebugger_breakpoint text=' . s:breakpoint_text . ' linehl=ColorColumn texthl=ColorColumn'
+    execute 'sign define vebugger_breakpoint text=' . s:breakpoint_text . ' linehl=ColorColumn texthl=ColorColumn'
 endif
 
 "Update all the marks(currently executed line and breakpoints) for a file
