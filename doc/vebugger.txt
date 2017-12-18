@@ -110,6 +110,14 @@ Example: >
     let g:vebugger_view_source_cmd='edit'
 <
 
+If you want to change the sign text of current line and breakpoint, use
+*g:vebugger_breakpoint_text* and *g:vebugger_currentline_text*
+
+Example: >
+    let g:vebugger_breakpoint_text='->'
+    let g:vebugger_currentline_text='**'
+<
+
 Some debuggers (currently jdb only) may use vim tags to find required source
 files. This is disabled by default, to enable this set *g:vebugger_use_tags*
 option:

@@ -301,17 +301,19 @@ function! s:standardCloseHandlers.removeCurrentMarker(debugger) dict
     sign unplace 1
 endfunction
 
+let s:breakpoint_text = get(g:, 'vebugger_breakpoint_text', '->')
+let s:currentline_text = get(g:, 'vebugger_currentline_text', '**')
 
 if hlexists("DebuggedLine")
   sign define vebugger_current linehl=DebuggedLine
 else
-  sign define vebugger_current text=->
+  execute 'sign define vebugger_current text=' . s:currentline_text
 endif
 
 if hlexists('BreakPoint')
-    sign define vebugger_breakpoint text=** linehl=BreakPoint texthl=BreakPoint
+    execute 'sign define vebugger_breakpoint text=' . s:breakpoint_text . ' linehl=BreakPoint texthl=BreakPoint'
 else
-    sign define vebugger_breakpoint text=** linehl=ColorColumn texthl=ColorColumn
+    execute 'sign define vebugger_breakpoint text=' . s:breakpoint_text . ' linehl=ColorColumn texthl=ColorColumn'
 endif
 
 "Update all the marks(currently executed line and breakpoints) for a file
