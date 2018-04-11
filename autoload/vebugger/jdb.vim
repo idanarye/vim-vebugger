@@ -1,6 +1,7 @@
 function! vebugger#jdb#start(entryClass,args)
 	let l:debugger=vebugger#std#startDebugger(shellescape(vebugger#util#getToolFullPath('jdb',get(a:args,'version'),'jdb'))
-				\.(has_key(a:args,'classpath') ? ' -classpath '.fnameescape(a:args.classpath) : ''))
+				\.(has_key(a:args,'classpath') && !has_key(a:args,'attach') ? ' -classpath '.fnameescape(a:args.classpath) : '')
+				\.(has_key(a:args,'attach') ? ' -attach '.shellescape(a:args.attach) : ''))
 	let l:debugger.state.jdb={}
 	if has_key(a:args,'srcpath')
 		let l:debugger.state.jdb.srcpath=a:args.srcpath
@@ -9,10 +10,14 @@ function! vebugger#jdb#start(entryClass,args)
 	endif
 	let l:debugger.state.jdb.filesToClassesMap={}
 
-	call l:debugger.writeLine('stop on '.a:entryClass.'.main')
-	call l:debugger.writeLine('run  '.a:entryClass.' '.vebugger#util#commandLineArgsForProgram(a:args))
+	if !has_key(a:args,'attach')
+		call l:debugger.writeLine('stop on '.a:entryClass.'.main')
+		call l:debugger.writeLine('run  '.a:entryClass.' '.vebugger#util#commandLineArgsForProgram(a:args))
+	else
+		call l:debugger.writeLine('run')
+	endif
 	call l:debugger.writeLine('monitor where')
-	if !has('win32')
+	if !has('win32') && !has_key(a:args,'attach')
 		call vebugger#std#openShellBuffer(l:debugger)
 	endif
 
@@ -31,6 +36,11 @@ function! vebugger#jdb#start(entryClass,args)
 	call l:debugger.std_addAllBreakpointActions(g:vebugger_breakpoints)
 
 	return l:debugger
+endfunction
+
+function! vebugger#jdb#attach(address,args)
+	let a:args.attach = a:address
+	call vebugger#jdb#start('', a:args)
 endfunction
 
 function! vebugger#jdb#_readProgramOutput(pipeName,line,readResult,debugger) dict
