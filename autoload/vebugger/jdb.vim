@@ -38,9 +38,10 @@ function! vebugger#jdb#start(entryClass,args)
 	return l:debugger
 endfunction
 
-function! vebugger#jdb#attach(address,args)
-	let a:args.attach = a:address
-	call vebugger#jdb#start('', a:args)
+function! vebugger#jdb#attach(address, ...)
+	let l:args = a:0 ? a:{1} : {}
+	let l:args.attach = a:address
+	call vebugger#jdb#start('', l:args)
 endfunction
 
 function! vebugger#jdb#_readProgramOutput(pipeName,line,readResult,debugger) dict
