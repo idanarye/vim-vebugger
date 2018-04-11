@@ -212,6 +212,15 @@ file - it's the name of the class to run. The supported extra arguments are:
 * "classpath": Where to look for class files
 * "srcpath": Where to look for source files. You can have multiple srcpaths, passed as a list
 * "version": The version of the debugger to run
+
+Alternatively, to attach to a running process you can use *vebugger#jdb#attach*
+>
+    call vebugger#jdb#attach('8000',{
+        \'srcpath':'src'})
+<
+The first argument here is the the address to attach to, e.g. 127.0.0.1:8000
+or just 8000. It does not support the "args" or "classpath" arguments.
+
 If you don't supply "classpath" and "srcpath", Vebugger will assume you are
 using the current directory for source files and class files.
 
