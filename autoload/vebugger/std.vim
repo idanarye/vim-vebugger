@@ -319,9 +319,14 @@ endif
 "Update all the marks(currently executed line and breakpoints) for a file
 function! vebugger#std#updateMarksForFile(state,filename)
     let l:filename=fnamemodify(a:filename,":p")
-    if -1 < bufnr(l:filename)
+    let l:bufnr = bufnr(l:filename)
+    if -1 < l:bufnr
         exe 'sign unplace 1 file='.fnameescape(fnamemodify(l:filename,':p'))
-        exe 'sign unplace 2 file='.fnameescape(fnamemodify(l:filename,':p'))
+        for l:sign in vebugger#util#listSignsInBuffer(l:bufnr)
+            if l:sign.name == 'vebugger_breakpoint'
+                exe 'sign unplace 2 file='.fnameescape(fnamemodify(l:filename,':p'))
+            endif
+        endfor
 
         for l:breakpoint in g:vebugger_breakpoints
             if fnamemodify(l:breakpoint.file,':p')==fnamemodify(a:filename,':p')

@@ -124,3 +124,25 @@ function! vebugger#util#listify(stringOrList)
     endif
 endfunction
 
+function! s:listSigns(filter) abort
+    let l:result = []
+    for l:line in split(execute('sign place '.a:filter), '\n')
+	let l:match = matchlist(l:line, '\C\v^\s+line\=(\d+)\s+id\=(\d+)\s+name\=(.+)$')
+	if !empty(l:match)
+	    call add(l:result, {
+			\ 'line': str2nr(l:match[1]),
+			\ 'id': str2nr(l:match[2]),
+			\ 'name': l:match[3],
+			\ })
+	endif
+    endfor
+    return l:result
+endfunction
+
+function! vebugger#util#listSignsInBuffer(bufnr) abort
+    return s:listSigns('buffer='.a:bufnr)
+endfunction
+
+function! vebugger#util#listSignsInFile(filename) abort
+    return s:listSigns('file='.a:filename)
+endfunction
