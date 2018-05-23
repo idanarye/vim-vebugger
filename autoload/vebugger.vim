@@ -148,7 +148,7 @@ function! s:f_debugger.addLineToTerminal(pipeName,line) dict
     if has_key(self,'terminalBuffer')
         let l:bufwin=bufwinnr(self.terminalBuffer)
         if -1<l:bufwin
-            exe l:bufwin.'wincmd w'
+            exe 'noautocmd '.l:bufwin.'wincmd w'
             if has_key(self,'pipes')
                         \&&has_key(self.pipes,a:pipeName)
                         \&&has_key(self.pipes[a:pipeName],'annotation')
@@ -157,7 +157,7 @@ function! s:f_debugger.addLineToTerminal(pipeName,line) dict
                 call append (line('$'),a:line)
             endif
             normal G
-            wincmd p
+            noautocmd wincmd p
         endif
     endif
 endfunction

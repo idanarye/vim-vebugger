@@ -142,10 +142,10 @@ function! s:standardFunctions.addLineToShellBuffer(line) dict
     if has_key(self,'shellBuffer')
         let l:bufwin=bufwinnr(self.shellBuffer)
         if -1<l:bufwin
-            exe l:bufwin.'wincmd w'
+            exe 'noautocmd '.l:bufwin.'wincmd w'
             call append (line('$'),a:line)
             normal G
-            wincmd p
+            noautocmd wincmd p
         endif
     endif
 endfunction
