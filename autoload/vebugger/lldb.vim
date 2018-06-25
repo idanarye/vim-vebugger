@@ -60,7 +60,7 @@ function! vebugger#lldb#_readWhere(pipeName,line,readResult,debugger)
 		let l:matches=matchlist(a:line,'\v^where:\s([^:]+):(\d+)')
 		if 2<len(l:matches)
 			let l:file=l:matches[1]
-			let l:file=fnamemodify(l:file,':~:.')
+			let l:file=fnamemodify(l:file,':p')
 			let a:readResult.std.location={
 						\'file':(l:file),
 						\'line':str2nr(l:matches[2])}
