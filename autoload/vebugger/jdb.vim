@@ -116,7 +116,7 @@ function! vebugger#jdb#_readWhere(pipeName,line,readResult,debugger)
 		if 4<len(l:matches)
 			let l:frameNumber=str2nr(l:matches[1])
 			let l:file=s:findFolderFromStackTrace(a:debugger.state.jdb.srcpath,l:matches[2],l:frameNumber).'/'.l:matches[3]
-			let l:file=fnamemodify(l:file,':~:.')
+			let l:file=fnamemodify(l:file,':p')
 			if 1==l:frameNumber " first stackframe is the current location
 				let a:readResult.std.location={
 							\'file':(l:file),
