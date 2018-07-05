@@ -1,6 +1,9 @@
+NOTE: I forked to add node.js support for node 8 and later
+currently the debugger stops at the first line. I'll fix this eventually. and then see if I can get this merged back into the original
+
+
 INTRODUCTION
 ============
-
 Screencast - https://vimeo.com/95775461
 
 Vebugger is yet another debugger frontend plugin for Vim, created because I
@@ -21,6 +24,7 @@ interactive shell debugger, and comes with implementations for:
  * Mdbg - a .NET debugger(Windows only)
  * PDB - a Python module for debugging Python scripts
  * RDebug - a Ruby command line option for debugging Ruby scripts
+ * NInspect - node inspect for using node.js with the inspect protocal (tested with node.8)
 
 Other implementations can be added with ease, and I will accept pull requests
 that add such implementations as long as they use Vim's |license|.

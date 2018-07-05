@@ -81,6 +81,7 @@ g:vebugger_path_XXX, where XXX is the executable used for the debugger:
 *g:vebugger_path_mdbg*      defaults to "Mdbg.exe"
 *g:vebugger_path_python*    defaults to "python"
 *g:vebugger_path_ruby*      defaults to "ruby"
+*g:vebugger_path_node*      defaults to "node inspect"
 
 Notice that for PDB and RDebug you use "python" and "ruby", since the debugger
 is actually a module bundled in the interpreter.
@@ -222,6 +223,21 @@ Here the first argument is the executable and the second is the source files
 directory. This will display a list of available processes to attach to.
 Notice that unlike GDB, you need "src" here since Mdbg doesn't display full
 source file paths.
+
+LAUNCHING NINSPECT                                             *vebugger-ninspect*
+
+RDebug is launched with *vebugger#ninspect#start*
+>
+    call vebugger#ninspect#start('test.js',{'args':['hello','world']})
+<
+The supported extra arguments are:
+* "args": Command line arguments for the debugged script
+* "version": The version of the debugger to run
+
+NInspect can also be launched with the *VBGstartRDebug* command:
+>
+    VBGstartNInspect script.js hello world
+<
 
 
 USING THE DEBUGGERS                        *vebugger-usage* *vebugger-commands*
