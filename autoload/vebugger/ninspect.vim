@@ -31,6 +31,7 @@ function! vebugger#ninspect#attach(connection, args)
     " Don't stop at the beginning
     " call l:debugger.writeLine('cont')
 
+    let s:programOutputMode=0
 	return l:debugger
 endfunction
 
@@ -66,7 +67,7 @@ function! vebugger#ninspect#start(entryFile,args)
 
     " Don't stop at the beginning
     " call l:debugger.writeLine('cont')
-
+    let s:programOutputMode=0
 	return l:debugger
 endfunction
 
@@ -74,50 +75,46 @@ function! vebugger#ninspect#_readProgramOutput(pipeName,line,readResult,debugger
 	if 'err'==a:pipeName
 		let a:readResult.std.programOutput={'line':a:line}
     else
-        "let l:donematch=matchlist(a:line,'\vdebug\>.............\<\sWaiting\sfor\sthe\sdebugger\sto\sdisconnect...')
-        "if 1<len(l:donematch)
-        "    let self.programOutputMode=0
-        "    let a:readResult.std.programFinish={'finish':1}
-        "else 
-        "    if get(self,'programOutputMode')
+        let l:donematch=matchlist(a:line,'\vdebug\>.............\<\sWaiting\sfor\sthe\sdebugger\sto\sdisconnect...')
+        if 1<len(l:donematch)
+            let s:programOutputMode=0
+        else 
+            if s:programOutputMode
                 let l:matches=matchlist(a:line,'\v(^........debug\>.............|^........|^)\<\s(.*)$')
                 if 3<len(l:matches)
                     let a:readResult.std.programOutput={'line':l:matches[2]}
                 endif
-        "    else 
-        "        let l:startmatch=matchlist(a:line,'\vdebug\>')
-        "        if 1<len(l:startmatch)
-        "            call a:debugger.writeLine('cont') " Start by continuing
-        "            let self.programOutputMode=1
-        "        endif
-        "    endif
-        "endif
+            else 
+                let l:startmatch=matchlist(a:line,'\vdebug\>')
+                if 1<len(l:startmatch)
+                    call a:debugger.writeLine('cont') " Start by continuing
+                    let s:programOutputMode=1
+                endif
+            endif
+        endif
 	endif
 endfunction
 
 function! vebugger#ninspect#_readWhere(pipeName,line,readResult,debugger)
-	if 'out'==a:pipeName
-		let l:matches=matchlist(a:line,'\vin\s(.*):(\d+)$')
-        
-        " if get(self,'programOutputMode')
-        "     echom 'test'.self.programOutputMode
-        " else
-        "     echom 'test2'
-        " endif
+	if 'out'==a:pipeName 
+        if s:programOutputMode"
+            let l:matches=matchlist(a:line,'\vin\s(.*):(\d+)$')
 
-		if 3<len(l:matches)
-			let l:file=l:matches[1]
-            let l:line=str2nr(l:matches[2])
-            let a:readResult.std.location={
-                        \'file':(l:file),
-                        \'line':(l:line)}
-		endif
+            if 3<len(l:matches)
+                let l:file=l:matches[1]
+                let l:line=str2nr(l:matches[2])
+                let a:readResult.std.location={
+                            \'file':(l:file),
+                            \'line':(l:line)}
+            endif
+        endif
 	endif
 endfunction
 
 function! vebugger#ninspect#_readFinish(pipeName,line,readResult,debugger)
     let l:matches=matchlist(a:line,'\vdebug\>.............\<\sWaiting\sfor\sthe\sdebugger\sto\sdisconnect...')
 	if 1<len(l:matches)
+        let s:programOutputMode=0
 		let a:readResult.std.programFinish={'finish':1}
     endif
 endfunction
