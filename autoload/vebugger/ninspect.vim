@@ -13,7 +13,7 @@ function! vebugger#ninspect#attach(connection, args)
 
 	call l:debugger.addReadHandler(function('vebugger#ninspect#_readProgramOutput'))
 	call l:debugger.addReadHandler(function('vebugger#ninspect#_readWhere'))
-	" call l:debugger.addReadHandler(function('vebugger#ninspect#_readEvaluatedExpressions'))
+	call l:debugger.addReadHandler(function('vebugger#ninspect#_readEvaluatedExpressions'))
 	call l:debugger.addReadHandler(function('vebugger#ninspect#_readFinish'))
 
 	call l:debugger.setWriteHandler('std','flow',function('vebugger#ninspect#_writeFlow'))
@@ -26,12 +26,13 @@ function! vebugger#ninspect#attach(connection, args)
 
 	call l:debugger.generateWriteActionsFromTemplate()
 
-	call l:debugger.std_addAllBreakpointActions(g:vebugger_breakpoints)
+	" call l:debugger.std_addAllBreakpointActions(g:vebugger_breakpoints)
 
     " Don't stop at the beginning
     " call l:debugger.writeLine('cont')
 
     let s:programOutputMode=0
+    let s:programEvalMode=0
 	return l:debugger
 endfunction
 
@@ -50,7 +51,7 @@ function! vebugger#ninspect#start(entryFile,args)
 
 	call l:debugger.addReadHandler(function('vebugger#ninspect#_readProgramOutput'))
 	call l:debugger.addReadHandler(function('vebugger#ninspect#_readWhere'))
-	" call l:debugger.addReadHandler(function('vebugger#ninspect#_readEvaluatedExpressions'))
+    call l:debugger.addReadHandler(function('vebugger#ninspect#_readEvaluatedExpressions'))
 	call l:debugger.addReadHandler(function('vebugger#ninspect#_readFinish'))
 
 	call l:debugger.setWriteHandler('std','flow',function('vebugger#ninspect#_writeFlow'))
@@ -63,15 +64,16 @@ function! vebugger#ninspect#start(entryFile,args)
 
 	call l:debugger.generateWriteActionsFromTemplate()
 
-	call l:debugger.std_addAllBreakpointActions(g:vebugger_breakpoints)
-
+    " call l:debugger.std_addAllBreakpointActions(g:vebugger_breakpoints)
     " Don't stop at the beginning
     " call l:debugger.writeLine('cont')
     let s:programOutputMode=0
+    let s:programEvalMode=0
 	return l:debugger
 endfunction
 
 function! vebugger#ninspect#_readProgramOutput(pipeName,line,readResult,debugger)
+    " echom a:line
 	if 'err'==a:pipeName
 		let a:readResult.std.programOutput={'line':a:line}
     else
@@ -85,8 +87,9 @@ function! vebugger#ninspect#_readProgramOutput(pipeName,line,readResult,debugger
                     let a:readResult.std.programOutput={'line':l:matches[2]}
                 endif
             else 
-                let l:startmatch=matchlist(a:line,'\vdebug\>')
+                let l:startmatch=matchlist(a:line,'\vfunction')
                 if 1<len(l:startmatch)
+                    call a:debugger.std_addAllBreakpointActions(g:vebugger_breakpoints)
                     call a:debugger.writeLine('cont') " Start by continuing
                     let s:programOutputMode=1
                 endif
@@ -97,7 +100,7 @@ endfunction
 
 function! vebugger#ninspect#_readWhere(pipeName,line,readResult,debugger)
 	if 'out'==a:pipeName 
-        if s:programOutputMode"
+        if s:programOutputMode
             let l:matches=matchlist(a:line,'\vin\s(.*):(\d+)$')
 
             if 3<len(l:matches)
@@ -112,7 +115,7 @@ function! vebugger#ninspect#_readWhere(pipeName,line,readResult,debugger)
 endfunction
 
 function! vebugger#ninspect#_readFinish(pipeName,line,readResult,debugger)
-    let l:matches=matchlist(a:line,'\vdebug\>.............\<\sWaiting\sfor\sthe\sdebugger\sto\sdisconnect...')
+    let l:matches=matchlist(a:line,'\vdebug\>.............\<\sWaiting\sfor\sthe\sdebugger\sto\sdisconnect...|Error:\sThis\ssocket\shas\sbeen\sended\sby\sthe\sother\sparty')
 	if 1<len(l:matches)
         let s:programOutputMode=0
 		let a:readResult.std.programFinish={'finish':1}
@@ -150,8 +153,11 @@ endfunction
 function! vebugger#ninspect#_requestEvaluateExpression(writeAction,debugger)
 	for l:evalAction in a:writeAction
 		call a:debugger.std_addLineToShellBuffer('Eval: '.l:evalAction.expression)
-		call a:debugger.writeLine('exec console.log(JSON.stringify('.l:evalAction.expression.', null, 2))')
+		"call a:debugger.writeLine('exec console.log(JSON.stringify('.l:evalAction.expression.', null, 2))')
+		call a:debugger.writeLine('exec (function(){var glbCacheForEval123abf = [];let ret = JSON.stringify('.l:evalAction.expression.', function(key,value){if(typeof value===''object''&&value!==null){if(glbCacheForEval123abf.indexOf(value)!==-1){try{return JSON.parse(JSON.stringify(value))}catch(error){return}}glbCacheForEval123abf.push(value)}return value}, 2);console.log(ret);return ret;})()')
 		"call a:debugger.writeLine('exec JSON.stringify('.l:evalAction.expression.', null, 2)')
+        let s:programEvalMode=1
+        let s:programEvalModeExpression=''.l:evalAction.expression
 	endfor
 endfunction
 
@@ -160,36 +166,31 @@ function! vebugger#ninspect#_executeStatements(writeAction,debugger)
 		if has_key(l:evalAction,'statement')
 			call a:debugger.std_addLineToShellBuffer('Execute: '.l:evalAction.expression)
 			call a:debugger.writeLine(l:evalAction.statement)
+            let s:programEvalMode=1
+            let s:programEvalModeExpression=''.l:evalAction.statement
 		endif
 	endfor
 endfunction
 
 function! vebugger#ninspect#_readEvaluatedExpressions(pipeName,line,readResult,debugger)
 	if 'out'==a:pipeName
-		let l:matches=matchlist(a:line,'\v^(\d+)\: (.*) \= (.*)$')
-		if 4<len(l:matches)
-			let l:id=str2nr(l:matches[1])
-			let l:expression=l:matches[2]
-			let l:value=l:matches[3]
+		if s:programEvalMode
+            let s:programEvalMode=s:programEvalMode+1
+        endif
+		if s:programEvalMode>3
+            let s:programEvalMode=0
+			let l:expression=s:programEvalModeExpression
+			let l:value=a:line
 			let a:readResult.std.evaluatedExpression={
-						\'id':(l:id),
 						\'expression':(l:expression),
 						\'value':(l:value)}
 		endif
 	endif
 endfunction
 
-" function! vebugger#ninspect#_removeAfterDisplayed(writeAction,debugger)
-" 	for l:removeAction in a:writeAction
-" 		if has_key(l:removeAction,'id')
-" 			call a:debugger.writeLine('undisplay '.l:removeAction.id)
-" 		endif
-" 	endfor
-" endfunction
-
-" function! s:unescapeString(str)
-" 	let l:result=a:str
-" 	let l:result=substitute(l:result,'\\"','"','g')
-" 	let l:result=substitute(l:result,'\\t',"\t",'g')
-" 	return l:result
-" endfunction
+function! s:unescapeString(str)
+	let l:result=a:str
+	let l:result=substitute(l:result,'\\n','\r','g')
+	let l:result=substitute(l:result,'[0-9]*m','','g')
+	return l:result
+endfunction
