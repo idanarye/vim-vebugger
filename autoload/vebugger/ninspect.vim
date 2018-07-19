@@ -191,6 +191,6 @@ endfunction
 function! s:unescapeString(str)
 	let l:result=a:str
 	let l:result=substitute(l:result,'\\n','\r','g')
-	let l:result=substitute(l:result,'[0-9]*m','','g')
+	let l:result=substitute(l:result, '\e\[[0-9;]\+[mK]', '', 'g')
 	return l:result
 endfunction
