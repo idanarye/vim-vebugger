@@ -57,7 +57,8 @@ function! vebugger#util#selectProcessOfFile(ofFile)
 		return str2nr(l:resultLinesParsed[l:chosenId][1])
 	else
 		let l:chosenLine=l:resultLines[l:chosenId]
-		return str2nr(matchlist(l:chosenLine,'\v^\s*\d+\)\s+(\d+)')[1])
+		let g:chosenLine = l:chosenLine
+		return str2nr(matchstr(l:chosenLine,'\v^\s*\zs(\d+)\ze\s*'))
 	endif
 endfunction
 
@@ -113,4 +114,35 @@ function! vebugger#util#isPathAbsolute(path)
 	else
 		return a:path[0]=~'\v^[/~$]' "Absolute paths in Linux start with ~(home),/(root dir) or $(environment variable)
 	endif
+endfunction
+
+function! vebugger#util#listify(stringOrList)
+    if type(a:stringOrList) == type([])
+        return copy(a:stringOrList) " so it could safely be modified by map&filter
+    else
+        return [a:stringOrList]
+    endif
+endfunction
+
+function! s:listSigns(filter) abort
+    let l:result = []
+    for l:line in split(execute('sign place '.a:filter), '\n')
+	let l:match = matchlist(l:line, '\C\v^\s+line\=(\d+)\s+id\=(\d+)\s+name\=(.+)$')
+	if !empty(l:match)
+	    call add(l:result, {
+			\ 'line': str2nr(l:match[1]),
+			\ 'id': str2nr(l:match[2]),
+			\ 'name': l:match[3],
+			\ })
+	endif
+    endfor
+    return l:result
+endfunction
+
+function! vebugger#util#listSignsInBuffer(bufnr) abort
+    return s:listSigns('buffer='.a:bufnr)
+endfunction
+
+function! vebugger#util#listSignsInFile(filename) abort
+    return s:listSigns('file='.a:filename)
 endfunction
