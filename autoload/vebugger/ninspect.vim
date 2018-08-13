@@ -152,9 +152,15 @@ endfunction
 
 function! vebugger#ninspect#_requestEvaluateExpression(writeAction,debugger)
 	for l:evalAction in a:writeAction
-		call a:debugger.std_addLineToShellBuffer('Eval: '.l:evalAction.expression)
+        if get(g:,'vebugger_ninspect_eval_out_to_console', 0) 
+            call a:debugger.std_addLineToShellBuffer('Eval: '.l:evalAction.expression)
+        endif
 		"call a:debugger.writeLine('exec console.log(JSON.stringify('.l:evalAction.expression.', null, 2))')
-		call a:debugger.writeLine('exec (function(){var glbCacheForEval123abf = [];let ret = JSON.stringify('.l:evalAction.expression.', function(key,value){if(typeof value===''object''&&value!==null){if(glbCacheForEval123abf.indexOf(value)!==-1){try{return JSON.parse(JSON.stringify(value))}catch(error){return}}glbCacheForEval123abf.push(value)}return value}, 2);console.log(ret);return ret;})()')
+        if get(g:,'vebugger_ninspect_eval_out_to_console', 0) 
+            call a:debugger.writeLine('exec (function(){var glbCacheForEval123abf = [];let ret = JSON.stringify('.l:evalAction.expression.', function(key,value){if(typeof value===''object''&&value!==null){if(glbCacheForEval123abf.indexOf(value)!==-1){try{return JSON.parse(JSON.stringify(value))}catch(error){return}}glbCacheForEval123abf.push(value)}return value}, 2);console.log(ret);return ret;})()')
+        else 
+            call a:debugger.writeLine('exec (function(){var glbCacheForEval123abf = [];let ret = JSON.stringify('.l:evalAction.expression.', function(key,value){if(typeof value===''object''&&value!==null){if(glbCacheForEval123abf.indexOf(value)!==-1){try{return JSON.parse(JSON.stringify(value))}catch(error){return}}glbCacheForEval123abf.push(value)}return value}, 2);return ret;})()')
+        endif
 		"call a:debugger.writeLine('exec JSON.stringify('.l:evalAction.expression.', null, 2)')
         let s:programEvalMode=1
         let s:programEvalModeExpression=''.l:evalAction.expression

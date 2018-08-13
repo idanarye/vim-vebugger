@@ -24,6 +24,7 @@ interactive shell debugger, and comes with implementations for:
 * Mdbg - a .NET debugger(Windows only)
 * PDB - a Python module for debugging Python scripts
 * RDebug - a Ruby command line option for debugging Ruby scripts
+* NInspect - Node inspect is a node js 8+ command line debugger
 Other implementations can be added with ease, and I will accept pull requests
 that add such implementations as long as they use Vim's |license|.
 

@@ -1,7 +1,3 @@
-NOTE: I forked to add node.js support for node 8 and later
-currently the debugger stops at the first line. I'll fix this eventually. and then see if I can get this merged back into the original
-
-
 INTRODUCTION
 ============
 Screencast - https://vimeo.com/95775461
