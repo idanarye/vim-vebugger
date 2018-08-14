@@ -227,7 +227,7 @@ source file paths.
 
 LAUNCHING NINSPECT                                             *vebugger-ninspect*
 
-RDebug is launched with *vebugger#ninspect#start*
+NInspect is launched with *vebugger#ninspect#start*
 >
     call vebugger#ninspect#start('test.js',{'args':['hello','world']})
 <
