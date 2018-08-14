@@ -60,6 +60,7 @@ function! s:attachLLDB(...)
 endfunction
 command! -nargs=+ -complete=file VBGattachLLDB call s:attachLLDB(<f-args>)
 command! -nargs=+ -complete=file VBGstartRDebug call vebugger#rdebug#start([<f-args>][0],{'args':[<f-args>][1:]})
+command! -nargs=+ -complete=file VBGstartNInspect call vebugger#ninspect#start([<f-args>][0],{'args':[<f-args>][1:]})
 command! -nargs=+ -complete=file VBGstartPDB call vebugger#pdb#start([<f-args>][0],{'args':[<f-args>][1:]})
 command! -nargs=+ -complete=file VBGstartPDB2 call vebugger#pdb#start([<f-args>][0],{'args':[<f-args>][1:],'version':'2'})
 command! -nargs=+ -complete=file VBGstartPDB3 call vebugger#pdb#start([<f-args>][0],{'args':[<f-args>][1:],'version':'3'})
