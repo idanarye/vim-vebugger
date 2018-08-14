@@ -10,12 +10,13 @@ supports:
  * Debugger flow commands - step-in, set-over, set-out and continue
  * Breakpoints management
  * Evaluating expressions in the current executed scope
- * Messing with the program's state(changing values, calling functions)
+ * Messing with the program's state (changing values, calling functions)
 
 Vebugger is built as a generic framework for building frontends for
 interactive shell debugger, and comes with implementations for:
 
- * GDB - doesn't need introdcution...
+ * GDB - doesn't need introduction...
+ * LLDB - debugger based on LLVM for C-family languages
  * JDB - a Java debugger
  * Mdbg - a .NET debugger(Windows only)
  * PDB - a Python module for debugging Python scripts

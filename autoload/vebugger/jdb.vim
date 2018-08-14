@@ -1,6 +1,7 @@
 function! vebugger#jdb#start(entryClass,args)
 	let l:debugger=vebugger#std#startDebugger(shellescape(vebugger#util#getToolFullPath('jdb',get(a:args,'version'),'jdb'))
-				\.(has_key(a:args,'classpath') ? ' -classpath '.fnameescape(a:args.classpath) : ''))
+				\.(has_key(a:args,'classpath') && !has_key(a:args,'attach') ? ' -classpath '.fnameescape(a:args.classpath) : '')
+				\.(has_key(a:args,'attach') ? ' -attach '.shellescape(a:args.attach) : ''))
 	let l:debugger.state.jdb={}
 	if has_key(a:args,'srcpath')
 		let l:debugger.state.jdb.srcpath=a:args.srcpath
@@ -9,10 +10,14 @@ function! vebugger#jdb#start(entryClass,args)
 	endif
 	let l:debugger.state.jdb.filesToClassesMap={}
 
-	call l:debugger.writeLine('stop on '.a:entryClass.'.main')
-	call l:debugger.writeLine('run  '.a:entryClass.' '.vebugger#util#commandLineArgsForProgram(a:args))
+	if !has_key(a:args,'attach')
+		call l:debugger.writeLine('stop on '.a:entryClass.'.main')
+		call l:debugger.writeLine('run  '.a:entryClass.' '.vebugger#util#commandLineArgsForProgram(a:args))
+	else
+		call l:debugger.writeLine('run')
+	endif
 	call l:debugger.writeLine('monitor where')
-	if !has('win32')
+	if !has('win32') && !has_key(a:args,'attach')
 		call vebugger#std#openShellBuffer(l:debugger)
 	endif
 
@@ -31,6 +36,12 @@ function! vebugger#jdb#start(entryClass,args)
 	call l:debugger.std_addAllBreakpointActions(g:vebugger_breakpoints)
 
 	return l:debugger
+endfunction
+
+function! vebugger#jdb#attach(address, ...)
+	let l:args = a:0 ? a:{1} : {}
+	let l:args.attach = a:address
+	call vebugger#jdb#start('', l:args)
 endfunction
 
 function! vebugger#jdb#_readProgramOutput(pipeName,line,readResult,debugger) dict
@@ -56,15 +67,46 @@ function! vebugger#jdb#_readProgramOutput(pipeName,line,readResult,debugger) dic
 	endif
 endfunction
 
-function! s:findFolderFromStackTrace(src,nameFromStackTrace)
-	let l:path=a:src
-	for l:dirname in split(a:nameFromStackTrace,'\.')
-		let l:nextPath=l:path.'/'.fnameescape(l:dirname)
-		if empty(glob(l:nextPath))
-			return l:path
-		endif
-		let l:path=l:nextPath
-	endfor
+function! s:getTagContainingString(tag, str)
+  let l:tags = taglist(a:tag)
+  if (len(l:tags) > 0)
+    for l:tag in l:tags
+      if (filereadable(l:tag.filename) && match(readfile(l:tag.filename), a:str) >= 0)
+        return l:tag
+      endif
+    endfor
+  endif
+  return {}
+endfunction
+
+function! s:findFolderFromStackTrace(src,nameFromStackTrace,frameNumber)
+  " Remove method name.
+  let l:canonicalClassName = strpart(a:nameFromStackTrace, 0, strridx(a:nameFromStackTrace, "."))
+  " Remove package name.
+  let l:simpleClassName = strridx(l:canonicalClassName, ".") >= 0 ? strpart(l:canonicalClassName, strridx(l:canonicalClassName, ".") + 1) : l:canonicalClassName
+  " Remove class name.
+  let l:package = strridx(l:canonicalClassName, ".") >= 0 ? strpart(l:canonicalClassName, 0, strridx(l:canonicalClassName, ".")) : ""
+
+  " We don't really use callstack, so we use tags only for the current location.
+  " Otherwise it makes everything too slow.
+  if exists('g:vebugger_use_tags') && g:vebugger_use_tags && a:frameNumber == 1
+    " Now first try to find a tag for the class from the required package.
+    let l:classTag = s:getTagContainingString(l:simpleClassName, l:package)
+    if (has_key(l:classTag, "filename"))
+      return fnamemodify(l:classTag.filename, ":h")
+    endif
+  endif
+
+  " If no such tag was found, try to find it using the src path.
+  for l:path in vebugger#util#listify(a:src)
+    for l:dirname in split(a:nameFromStackTrace,'\.')
+      let l:nextPath=l:path.'/'.fnameescape(l:dirname)
+      if empty(glob(l:nextPath))
+        return l:path
+      endif
+      let l:path=l:nextPath
+    endfor
+  endfor
 	return l:path
 endfunction
 
@@ -72,9 +114,9 @@ function! vebugger#jdb#_readWhere(pipeName,line,readResult,debugger)
 	if 'out'==a:pipeName
 		let l:matches=matchlist(a:line,'\v\s*\[(\d+)]\s*(\S+)\s*\(([^:]*):(\d*)\)')
 		if 4<len(l:matches)
-			let l:file=s:findFolderFromStackTrace(a:debugger.state.jdb.srcpath,l:matches[2]).'/'.l:matches[3]
-			let l:file=fnamemodify(l:file,':~:.')
 			let l:frameNumber=str2nr(l:matches[1])
+			let l:file=s:findFolderFromStackTrace(a:debugger.state.jdb.srcpath,l:matches[2],l:frameNumber).'/'.l:matches[3]
+			let l:file=fnamemodify(l:file,':p')
 			if 1==l:frameNumber " first stackframe is the current location
 				let a:readResult.std.location={
 							\'file':(l:file),
@@ -114,7 +156,8 @@ endfunction
 function! s:getClassNameFromFile(filename)
 	let l:className=fnamemodify(a:filename,':t:r') " Get only the name of the file, without path or extension
 	for l:line in readfile(a:filename)
-		let l:matches=matchlist(l:line,'\vpackage\s+(%(\w|\.)+)\s*;')
+    " trailing ; is optional to make it work for groovy as well
+		let l:matches=matchlist(l:line,'\vpackage\s+(%(\w|\.)+)\s*;?')
 		if 1<len(l:matches)
 			return l:matches[1].'.'.l:className
 		endif

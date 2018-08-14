@@ -4,7 +4,7 @@
 Author:  Idan Arye <https://github.com/idanarye/>
 License: Same terms as Vim itself (see |license|)
 
-Version: 1.2.3
+Version: 1.2.3+
 
 INTRODUCTION                                                       *vebugger*
 
@@ -20,6 +20,7 @@ supports:
 Vebugger is built as a generic framework for building frontends for
 interactive shell debugger, and comes with implementations for:
 * GDB - doesn't need introdcution...
+* LLDB - debugger based on LLVM for C-family languages
 * JDB - a Java debugger
 * Mdbg - a .NET debugger(Windows only)
 * PDB - a Python module for debugging Python scripts
@@ -77,24 +78,55 @@ Example: >
 If a debugger is not in the PATH you can set the direct path to it by setting
 g:vebugger_path_XXX, where XXX is the executable used for the debugger:
 
-*g:vebugger_path_gdb*       defaults to "gdb"
-*g:vebugger_path_jdb*       defaults to "jdb"
-*g:vebugger_path_mdbg*      defaults to "Mdbg.exe"
-*g:vebugger_path_python*    defaults to "python"
-*g:vebugger_path_ruby*      defaults to "ruby"
-*g:vebugger_path_node*      defaults to "node inspect"
+*g:vebugger_path_gdb*           defaults to "gdb"
+*g:vebugger_path_python_lldb*   defaults to "python2"
+*g:vebugger_path_jdb*           defaults to "jdb"
+*g:vebugger_path_mdbg*          defaults to "Mdbg.exe"
+*g:vebugger_path_python*        defaults to "python"
+*g:vebugger_path_ruby*          defaults to "ruby"
+*g:vebugger_path_node*          defaults to "node inspect"
 
-Notice that for PDB and RDebug you use "python" and "ruby", since the debugger
-is actually a module bundled in the interpreter.
+Notice that for LLDB, PDB and RDebug you use "python_lldb", "python" and
+"ruby", since the debugger is actually a module bundled in the interpreter
+(LLDB is called by a python wrapper because the LLDB executable has no
+machine interface like GDB to interact with).
 
-You can set multiple versions for each debugger, by appending the version name
-to the debugger name with "_". These versions will be used when the "version"
-argument is supplied when running the debugger:
+You can set multiple versions for each debugger (except LLDB), by appending
+the version name to the debugger name with "_". These versions will be used
+when the "version" argument is supplied when running the debugger:
 
 *g:vebugger_path_python_2*  defaults to "python2"
 *g:vebugger_path_python_3*  defaults to "python3"
 *g:vebugger_path_mdbg_32*  No default - use it for the 32bit version of Mdbg
 *g:vebugger_path_mdbg_64*  No default - use it for the 64bit version of Mdbg
+
+For LLDB a special python variable is needed ("g:vebugger_path_python_lldb")
+since the lldb python api is only python 2 compatible. So, it is possible to
+use a python 2 interpreter for LLDB and another python version for PDB at
+the same time.
+
+When stepping into functions in unopened files, they are opened with :new by
+default. This can be configured by setting *g:vebugger_view_source_cmd*
+
+Example: >
+    let g:vebugger_view_source_cmd='edit'
+<
+
+If you want to change the sign text of current line and breakpoint, use
+*g:vebugger_breakpoint_text* and *g:vebugger_currentline_text*
+
+Example: >
+    let g:vebugger_breakpoint_text='->'
+    let g:vebugger_currentline_text='**'
+<
+
+Some debuggers (currently jdb only) may use vim tags to find required source
+files. This is disabled by default, to enable this set *g:vebugger_use_tags*
+option:
+
+Example: >
+    let g:vebugger_use_tags=1
+<
 
 LAUNCHING DEBUGGERS                                      *vebugger-launching*
 
@@ -119,6 +151,7 @@ GDB can be launched with *vebugger#gdb#start*
 The supported extra arguments are:
 * "args": Command line arguments for the debugged program
 * "pid": Process id to attach to
+* "con": URL of GDB-server to connect to
 * "entry": The entry point for starting the debugging(default "main")
 * "version": The version of the debugger to run
 You can't specify both ("args" and/or "entry") and "pid".
@@ -132,8 +165,39 @@ attach to, and attaches to them:
 >
    VBGattachGDB a.out
 <
+
+VBGattachGDB accepts as a second argument the process ID of the process to
+attach to or the URL for a GDB-server to connect to.
+
 The *VBGstartGDBForD* command is the same as VBGstartGDB but for Dlang
 programs.
+
+
+LAUNCHING LLDB                                                *vebugger-lldb*
+
+LLDB can be launched with *vebugger#lldb#start*
+>
+    call vebugger#lldb#start('a.out',{'args':['hello','world']})
+<
+
+The supported extra arguments are:
+* "args": Command line arguments for the debugged program
+* "pid": Process id to attach to
+You can't specify both "args" and "pid".
+
+LLDB can also be launched with the *VBGstartLLDB* command:
+>
+    VBGstartLLDB a.out hello world
+<
+The *VBGattachLLDB* command searches for processes launched from the EXE to
+attach to, and attaches to them:
+>
+   VBGattachLLDB a.out
+<
+
+VBGattachLLDB accepts as a second argument the process ID of the process to
+attach to.
+
 
 LAUNCHING JDB                                                 *vebugger-jdb*
 
@@ -148,13 +212,26 @@ Unlike in the other debuggers, the first argument here is not the name of a
 file - it's the name of the class to run. The supported extra arguments are:
 * "args": Command line arguments for the debugged program
 * "classpath": Where to look for class files
-* "srcpath": Where to look for source files
+* "srcpath": Where to look for source files. You can have multiple srcpaths, passed as a list
 * "version": The version of the debugger to run
+
+Alternatively, to attach to a running process you can use *vebugger#jdb#attach*
+>
+    call vebugger#jdb#attach('8000',{
+        \'srcpath':'src'})
+<
+The first argument here is the the address to attach to, e.g. 127.0.0.1:8000
+or just 8000. It does not support the "args" or "classpath" arguments.
+
 If you don't supply "classpath" and "srcpath", Vebugger will assume you are
 using the current directory for source files and class files.
 
 JDB does not have a command for starting it, since you usually want to supply
 "classpath" and "srcpath".
+
+If you need Vebugger to search for the source files in multiple locations, you can
+specify `srcpath` as a list. Vebugger will search on all these folders
+and the first match will be returned as the Source file to be shown.
 
 
 LAUNCHING RDEBUG                                             *vebugger-rdebug*
@@ -258,7 +335,7 @@ MANAGE BREAKPOINTS                                      *vebugger-breakpoints*
 
 *:VBGtoggleBreakpoint* Toggle a breakpoint. The file and line should be supplied as arguments.
 *:VBGtoggleBreakpointThisLine* Toggle a breakpoint for the current line.
-*:VBGclearBreakpints* Clear all breakpoints.
+*:VBGclearBreakpoints* Clear all breakpoints.
 
 EVALUATE EXPRESSIONS                                      *vebugger-evalutate*
 
@@ -299,7 +376,7 @@ O      |:VBGstepOut|
 c      |:VBGcontinue|
 
 b      |:VBGtoggleBreakpointThisLine|
-B      |:VBGclearBreakpints|
+B      |:VBGclearBreakpoints|
 
 e      |:VBGevalWordUnderCursor| in normal mode
        |:VBGevalSelectedText| in select mode
@@ -490,3 +567,26 @@ defines the "std" namespace, and plugins built on top of Vebugger can define a
 namespaced named after the plugin to contain their own read results.  A
 debugger frontend implementation can also define it's own namespace for
 storing debugger-specific data and configuration.
+
+COMPILER OUTPUT BUFFERERS               *vebugger-architecture-bufferers*
+
+Read handlers receive lines created by the debugger output bufferer. There is
+only one for each debugger, and if you just want to get the debugger output
+line-by-line "as is" you can just use the default one and ignore this section.
+
+The debugger bufferer is a dict function(|:func-dict|) that operates on pipe
+objects. It will be called when the pipe object's "self.buffer", which
+represents everything read from a debugger's output stream, has new data.
+
+The bufferer function should:
+* return a list of new lines that will be send to the read handlers, or an
+  empty list if there are no new lines.
+* "advance" the buffer - delete from it's head everything that was handled.
+  This can easily be done with |strpart()|.
+
+Bufferers should be set individually for each pipe, usually in the debugger
+creation function:
+
+Example: >
+	let l:debugger.pipes.out.bufferer = function('g:myCustomBufferer')
+<

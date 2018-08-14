@@ -95,7 +95,7 @@ function! vebugger#mdbg#_readWhere(pipeName,line,readResult,debugger)
 	if 3<len(l:matches)
 	    let l:frameNumber=str2nr(l:matches[1])
 	    let l:file=s:findFilePath(a:debugger.state.mdbg.srcpath,l:matches[3],l:matches[2])
-	    let l:file=fnamemodify(l:file,':~:.')
+	    let l:file=fnamemodify(l:file,':p')
 	    if 0==l:frameNumber " first stackframe is the current location
 		let a:readResult.std.location={
 			    \'file':(l:file),
