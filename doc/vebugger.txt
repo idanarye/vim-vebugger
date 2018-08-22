@@ -312,7 +312,7 @@ The supported extra arguments are:
 * "args": Command line arguments for the debugged script
 * "version": The version of the debugger to run
 
-NInspect can also be launched with the *VBGstartRDebug* command:
+NInspect can also be launched with the *VBGstartNInspect* command:
 >
     VBGstartNInspect script.js hello world
 <
