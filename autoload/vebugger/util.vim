@@ -126,7 +126,14 @@ endfunction
 
 function! s:listSigns(filter) abort
     let l:result = []
-    for l:line in split(execute('sign place '.a:filter), '\n')
+    if v:lang == 'ja'
+	let $LANG = 'en'
+	let l:lines = execute('sign place '.a:filter)
+	let $LANG = 'ja'
+    else
+	let l:lines = execute('sign place '.a:filter)
+    endif
+    for l:line in split(l:lines, '\n')
 	let l:match = matchlist(l:line, '\C\v^\s+line\=(\d+)\s+id\=(\d+)\s+name\=(.+)$')
 	if !empty(l:match)
 	    call add(l:result, {
