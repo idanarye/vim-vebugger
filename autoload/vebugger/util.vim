@@ -126,13 +126,12 @@ endfunction
 
 function! s:listSigns(filter) abort
     let l:result = []
-    if v:lang == 'ja'
-	let $LANG = 'en'
-	let l:lines = execute('sign place '.a:filter)
-	let $LANG = 'ja'
-    else
-	let l:lines = execute('sign place '.a:filter)
-    endif
+
+    let l:lang = matchstr(execute('language messages'), '"\zs.*\ze"')
+    if l:lang !~ 'en' | language messages en_US.utf8 | endif
+    let l:lines = execute('sign place '.a:filter)
+    if l:lang !~ 'en' |	language messages l:lang | endif
+
     for l:line in split(l:lines, '\n')
 	let l:match = matchlist(l:line, '\C\v^\s+line\=(\d+)\s+id\=(\d+)\s+name\=(.+)$')
 	if !empty(l:match)
