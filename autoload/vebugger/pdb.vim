@@ -59,7 +59,7 @@ function! vebugger#pdb#_readWhere(pipeName,line,readResult,debugger)
 		let l:matches=matchlist(a:line,'\v^\> (.+)\((\d+)\).*\(\)%(-\>.*)?$')
 
 		if 2<len(l:matches)
-			let l:file=l:matches[1]
+			let l:file=has('win32') && &shellslash ? substitute(l:matches[1], '\\', '/', 'g') : l:matches[1]
 			if !empty(glob(l:file))
 				let l:line=str2nr(l:matches[2])
 				let a:readResult.std.location={
