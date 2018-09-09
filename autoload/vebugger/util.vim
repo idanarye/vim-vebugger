@@ -116,6 +116,14 @@ function! vebugger#util#isPathAbsolute(path)
 	endif
 endfunction
 
+function! vebugger#util#WinShellSlash(path)
+	if has('win32') && &shellslash
+		return substitute(a:path, '\\', '/', 'g')
+	else
+		return a:path
+	endif
+endfunction
+
 function! vebugger#util#listify(stringOrList)
     if type(a:stringOrList) == type([])
         return copy(a:stringOrList) " so it could safely be modified by map&filter
