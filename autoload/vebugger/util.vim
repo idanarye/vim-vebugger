@@ -124,15 +124,20 @@ function! vebugger#util#listify(stringOrList)
     endif
 endfunction
 
-function! s:listSigns(filter) abort
-    let l:result = []
-
+" Return the resul of a:command in English, even if language messages set
+" others.
+function! vebugger#util#EnglishExecute(command) abort
     let l:lang = matchstr(execute('language messages'), '"\zs.*\ze"')
     if l:lang !~ 'en' | language messages en_US.utf8 | endif
-    let l:lines = execute('sign place '.a:filter)
+    let l:result = execute(a:command)
     if l:lang !~ 'en' |	language messages l:lang | endif
 
-    for l:line in split(l:lines, '\n')
+    return l:result
+endfunction
+
+function! s:listSigns(filter) abort
+    let l:result = []
+    for l:line in split(vebugger#util#EnglishExecute('sign place '.a:filter), '\n')
 	let l:match = matchlist(l:line, '\C\v^\s+line\=(\d+)\s+id\=(\d+)\s+name\=(.+)$')
 	if !empty(l:match)
 	    call add(l:result, {
