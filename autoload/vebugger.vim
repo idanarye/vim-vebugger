@@ -47,6 +47,8 @@ function! s:f_debugger.invokeReading() dict
     endfor
     for l:k in keys(l:newLines)
         for l:line in l:newLines[l:k]
+			" remove ANSI Colors
+			let l:line = substitute(l:line,"\\W\\[\\d\\{-}[a-zA-Z]","","g")
             call self.handleLine(l:k, l:line)
         endfor
     endfor
