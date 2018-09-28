@@ -323,6 +323,7 @@ endfunction
 
 "Perform an action on the actvie debugger, and register that action
 function! vebugger#userAction(action, ...)
+	" a:000 => ['std', 'flow', 'continue']
     if exists('s:debugger')
         if has_key(s:debugger, a:action)
             let s:debugger.lastUserAction = {

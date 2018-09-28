@@ -73,6 +73,7 @@ endfunction
 
 "Start a debugger with the std settings
 function! vebugger#std#startDebugger(command)
+
     let l:debugger=vebugger#startDebugger(a:command)
 
     call vebugger#std#standardInit(l:debugger)

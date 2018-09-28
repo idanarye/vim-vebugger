@@ -1,4 +1,5 @@
 function! vebugger#ninspect#attach(connection, args)
+
 	let l:debugger=vebugger#std#startDebugger(shellescape(vebugger#util#getToolFullPath('node',get(a:args,'version'),'node'))
 				\.' inspect '.a:connection)
 	let l:debugger.state.ninspect={}
