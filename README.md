@@ -7,7 +7,7 @@ wasn't happy with the other debugger plugins I found. Vebugger currently
 supports:
 
  * Tracking the currently executed command in the source code
- * Debugger flow commands - step-in, set-over, set-out and continue
+ * Debugger flow commands - step-in, step-over, step-out and continue
  * Breakpoints management
  * Evaluating expressions in the current executed scope
  * Messing with the program's state (changing values, calling functions)
@@ -29,10 +29,10 @@ that add such implementations as long as they use Vim's |license|.
 Vebugger is built under the following assumptions:
 
  * While command line debuggers share enough in common to make the creation
-   of such a framework as Vebugger possible, the differences between them are
+   of a framework such as Vebugger possible, the differences between them are
    too great to be expressed with regular expression. To support them all at
    least some code has to be written.
- * Unlike IDE users, Vim users tend to understand the tools the operate behind
+ * Unlike IDE users, Vim users tend to understand the tools that operate behind
    the scenes. While Vebugger automates the common features, it allows you to
    "open the hood" and interact with the debugger's shell directly so you could
    utilize the full power of your debugger.
