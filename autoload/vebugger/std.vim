@@ -199,14 +199,14 @@ function! s:standardThinkHandlers.moveToCurrentLine(readResult,debugger) dict
         endif
         if a:debugger.state.std.location!=a:readResult.std.location
             if has_key(a:debugger.state.std.location,'file')
-                exe 'sign unplace 1 file='.fnameescape(fnamemodify(a:debugger.state.std.location.file,':p'))
+                exe 'sign unplace 1 file='.fnamemodify(a:debugger.state.std.location.file,':p')
             endif
             let a:debugger.state.std.location=deepcopy(a:readResult.std.location)
             if -1 == bufwinnr(a:readResult.std.location.file)
                 exe get(g:, 'vebugger_view_source_cmd', 'new').' '.(a:readResult.std.location.file)
             endif
             call vebugger#std#updateMarksForFile(a:debugger.state,a:readResult.std.location.file)
-            exe 'sign jump 1 file='.fnameescape(fnamemodify(a:readResult.std.location.file,':p'))
+            exe 'sign jump 1 file='.fnamemodify(a:readResult.std.location.file,':p')
         endif
     endif
 endfunction
@@ -321,23 +321,23 @@ function! vebugger#std#updateMarksForFile(state,filename)
     let l:filename=fnamemodify(a:filename,":p")
     let l:bufnr = bufnr(l:filename)
     if -1 < l:bufnr
-        exe 'sign unplace 1 file='.fnameescape(fnamemodify(l:filename,':p'))
+        exe 'sign unplace 1 file='.fnamemodify(l:filename,':p')
         for l:sign in vebugger#util#listSignsInBuffer(l:bufnr)
             if l:sign.name == 'vebugger_breakpoint'
-                exe 'sign unplace 2 file='.fnameescape(fnamemodify(l:filename,':p'))
+                exe 'sign unplace 2 file='.fnamemodify(l:filename,':p')
             endif
         endfor
 
         for l:breakpoint in g:vebugger_breakpoints
             if fnamemodify(l:breakpoint.file,':p')==fnamemodify(a:filename,':p')
-                exe 'sign place 2 name=vebugger_breakpoint line='.l:breakpoint.line.' file='.fnameescape(fnamemodify(l:breakpoint.file,':p'))
+                exe 'sign place 2 name=vebugger_breakpoint line='.l:breakpoint.line.' file='.fnamemodify(l:breakpoint.file,':p')
             endif
         endfor
 
         if !empty(a:state)
             if !empty(a:state.std.location)
                 if fnamemodify(a:state.std.location.file,':p')==fnamemodify(a:filename,':p')
-                    exe 'sign place 1 name=vebugger_current line='.a:state.std.location.line.' file='.fnameescape(fnamemodify(l:filename,':p'))
+                    exe 'sign place 1 name=vebugger_current line='.a:state.std.location.line.' file='.fnamemodify(l:filename,':p')
                 endif
             endif
         endif
