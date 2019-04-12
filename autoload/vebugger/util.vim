@@ -132,7 +132,7 @@ function! vebugger#util#listify(stringOrList)
     endif
 endfunction
 
-" Return the resul of a:command in English, even if language messages set
+" Return the result of a:command in English, even if language messages set
 " others.
 function! vebugger#util#EnglishExecute(command) abort
     let l:lang = matchstr(execute('language messages'), '"\zs.*\ze"')
@@ -141,7 +141,7 @@ function! vebugger#util#EnglishExecute(command) abort
     endif
     let l:result = execute(a:command)
     if l:lang !~ 'en'
-        language messages l:lang
+        execute("language messages ". l:lang)
     endif
     return l:result
 endfunction
