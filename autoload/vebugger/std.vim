@@ -323,7 +323,10 @@ function! vebugger#std#updateMarksForFile(state,filename)
     if -1 < l:bufnr
         exe 'sign unplace 1 file='.fnamemodify(l:filename,':p')
         for l:sign in vebugger#util#listSignsInBuffer(l:bufnr)
-            if l:sign.name == 'vebugger_breakpoint'
+            " Checking that sign name starts with 'vebugger_breakpoint'
+            " instead of assuming exact equality
+            let l:is_breakpoint=match(l:sign.name, '^vebugger_breakpoint')
+            if l:is_breakpoint == 0
                 exe 'sign unplace 2 file='.fnamemodify(l:filename,':p')
             endif
         endfor
