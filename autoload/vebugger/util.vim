@@ -168,3 +168,7 @@ endfunction
 function! vebugger#util#listSignsInFile(filename) abort
     return s:listSigns('file='.a:filename)
 endfunction
+
+function! vebugger#util#endsWith(string, endsWith) abort
+    return a:string[-len(a:endsWith):] == a:endsWith
+endfunction
