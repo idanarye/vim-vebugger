@@ -128,6 +128,18 @@ Example: >
     let g:vebugger_use_tags=1
 <
 
+The LLDB frontend is capable of copying the current debugger stacktrace to
+clipboard in a format that can be read by the vim-unstack plugin (see
+https://github.com/mattboehm/vim-unstack for more information). To activate
+this feature set *g:vebugger_copy_stacktrace_to_clipboard_lldb* option:
+
+Example: >
+    let g:vebugger_copy_stacktrace_to_clipboard_lldb=1
+<
+
+On Linux, you need either xclip or xsel for this feature to work.
+
+
 LAUNCHING DEBUGGERS                                      *vebugger-launching*
 
 A debugger's implementation is responsible for starting it. The standard is to

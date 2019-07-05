@@ -2,8 +2,13 @@ let s:script_dir_path=expand('<sfile>:p:h')
 
 function! vebugger#lldb#start(binaryFile,args)
 	let l:debuggerExe=vebugger#util#getToolFullPath('python','lldb','python2')
-	let l:debugger=vebugger#std#startDebugger(shellescape(l:debuggerExe)
-				\.' '.s:script_dir_path.'/lldb_wrapper.py '.fnameescape(a:binaryFile))
+    let l:debuggerStartCommand = shellescape(l:debuggerExe)
+				\.' '.s:script_dir_path.'/lldb_wrapper.py '.fnameescape(a:binaryFile)
+    if exists('g:vebugger_copy_stacktrace_to_clipboard_lldb') &&
+                \ g:vebugger_copy_stacktrace_to_clipboard_lldb
+        let l:debuggerStartCommand .= ' --stacktrace_to_clipboard'
+    endif
+	let l:debugger=vebugger#std#startDebugger(l:debuggerStartCommand)
 
 	let l:debugger.state.lldb={}
 

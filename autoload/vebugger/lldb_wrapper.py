@@ -13,6 +13,7 @@ import platform
 import re
 import subprocess
 import sys
+import tempfile
 
 
 FilePosition = collections.namedtuple('FilePosition', ['filepath', 'linenumber'])
@@ -78,8 +79,9 @@ class Debugger(object):
             del self._location_to_id[location]
             return breakpoint_id
 
-    def __init__(self, executable):
+    def __init__(self, executable, stacktrace_to_clipboard=False):
         self._executable = executable
+        self._stacktrace_to_clipboard = stacktrace_to_clipboard
         self._debugger = lldb.SBDebugger.Create()
         self._debugger.SetAsync(False)
         self._command_interpreter = self._debugger.GetCommandInterpreter()
@@ -143,6 +145,29 @@ class Debugger(object):
         arguments = parts[1:]
         locals()[command](arguments)
 
+    def _copy_stacktrace_to_clipboard(self, stacktrace):
+        stacktrace_text = '\n'.join('File "{}", line {:d},'.format(file, line) for file, line in reversed(stacktrace))
+        process = None
+        if 'TMUX' in os.environ:
+            process = subprocess.Popen(['tmux', 'load-buffer', '-'], stdin=subprocess.PIPE)
+        else:
+            platform_system = platform.system()
+            if platform_system == 'Darwin':
+                process = subprocess.Popen('pbcopy', env={'LANG': 'en_US.UTF-8'}, stdin=subprocess.PIPE)
+            else:
+                # assume we are running on Linux
+                for cmd in (['xclip', '-selection', 'clipboard'], ['xsel', '--clipboard']):
+                    try:
+                        process = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+                        break
+                    except OSError:
+                        pass
+                else:
+                    print(prefix_output('Stacktrace cannot be copied to clipboard! Either install xclip or xsel.',
+                                        'warning: '))
+        if process is not None:
+            process.communicate(stacktrace_text.encode('utf-8'))
+
     @property
     def debugger_output(self):
         if self._last_debugger_return_obj is not None:
@@ -154,7 +179,7 @@ class Debugger(object):
 
     @property
     def where(self):
-        def extract_where(backtrace):
+        def extract_where(backtrace, collect_complete_stacktrace=False):
             where = None
             pattern = re.compile('at:([^:]+):(\d+)')
             backtrace_lines = backtrace.split('\n')
@@ -164,16 +189,25 @@ class Debugger(object):
                     filepath = match_obj.group(1)
                     linenumber = int(match_obj.group(2))
                     if os.access(filepath, os.R_OK):
-                        where = FilePosition(filepath, linenumber)
-                        break
+                        if collect_complete_stacktrace:
+                            if where is None:
+                                where = []
+                            where.append(FilePosition(filepath, linenumber))
+                        else:
+                            where = FilePosition(filepath, linenumber)
+                            break
             return where
 
         where = None
         self.run_command('bt')
         debugger_output = self.debugger_output
         if debugger_output is not None:
-            where = extract_where(debugger_output)
-        return where
+            where = extract_where(debugger_output, self._stacktrace_to_clipboard)
+        if self._stacktrace_to_clipboard and where is not None:
+            self._copy_stacktrace_to_clipboard(where)
+            return where[0]
+        else:
+            return where
 
     @property
     def program_stdout(self):
@@ -225,9 +259,9 @@ def main():
     if len(sys.argv) < 2:
         sys.stderr.write('An executable is needed as an argument.\n')
         sys.exit(1)
-
     executable = sys.argv[1]
-    debugger = Debugger(executable)
+    stacktrace_to_clipboard = (len(sys.argv) > 2 and sys.argv[2] == '--stacktrace_to_clipboard')
+    debugger = Debugger(executable, stacktrace_to_clipboard)
 
     try:
         while True:
