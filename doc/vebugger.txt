@@ -129,7 +129,7 @@ Example: >
 <
 
 If you want to prevent Vebugger from writing specific text in a specific
-pattern, you can use a vim regex pattern to do so by setting the option
+pattern, you can use a vim regex pattern by setting the option
 *g:vebugger_ignore_patterns* or *b:vebugger_ignore_patterns*
 
 Example: >
