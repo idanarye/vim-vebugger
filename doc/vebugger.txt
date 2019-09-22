@@ -128,9 +128,10 @@ Example: >
     let g:vebugger_use_tags=1
 <
 
-If you want to prevent Vebugger from writing messages in a specific
-pattern, you can use a vim regex pattern by setting the option
-*g:vebugger_ignore_patterns* or *b:vebugger_ignore_patterns*
+If you want to prevent Vebugger from writing messages in a specific pattern
+on a terminal buffer opened by using *:VBGtoggleTerminalBuffer* command, you
+can use a vim regex pattern in the option *g:vebugger_ignore_patterns* or
+*b:vebugger_ignore_patterns*
 
 Example: >
     let g:vebugger_ignore_patterns = [
