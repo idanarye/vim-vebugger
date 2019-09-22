@@ -129,7 +129,7 @@ Example: >
 <
 
 If you want to prevent Vebugger from writing messages in a specific pattern
-on a terminal buffer opened by using *:VBGtoggleTerminalBuffer* command, you
+on a terminal buffer opened by using |:VBGtoggleTerminalBuffer| command, you
 can use a vim regex pattern in the option *g:vebugger_ignore_patterns* or
 *b:vebugger_ignore_patterns*
 
