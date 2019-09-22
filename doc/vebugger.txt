@@ -128,6 +128,22 @@ Example: >
     let g:vebugger_use_tags=1
 <
 
+If you want to prevent Vebugger from writing messages in a specific pattern
+on a terminal buffer opened by using |:VBGtoggleTerminalBuffer| command, you
+can use a vim regex pattern in the option *g:vebugger_ignore_patterns* or
+*b:vebugger_ignore_patterns*
+
+Example: >
+    let g:vebugger_ignore_patterns = [
+      \ '^*stopped',
+      \ '^[*^]running',
+      \ 'next$',
+      \ '^&\?display',
+      \ '^&\?continue',
+      \ '\^done$',
+      \ ]
+<
+
 LAUNCHING DEBUGGERS                                      *vebugger-launching*
 
 A debugger's implementation is responsible for starting it. The standard is to

@@ -63,7 +63,27 @@ endfunction
 
 "Handle a single line from the debugger's interactive shell
 function! s:f_debugger.handleLine(pipeName,line) dict
-    call self.addLineToTerminal(a:pipeName,a:line)
+    let l:ignore_patterns = []
+    if exists('b:vebugger_ignore_patterns')
+        let l:ignore_patterns = b:vebugger_ignore_patterns
+    elseif exists('g:vebugger_ignore_patterns')
+        let l:ignore_patterns = g:vebugger_ignore_patterns
+    endif
+
+    if len(l:ignore_patterns)
+        let l:ignore_the_line = 0
+        for pattern in l:ignore_patterns
+            if match(a:line, pattern) >= 0
+                let l:ignore_the_line = 1
+                break
+            endif
+        endfor
+        if !l:ignore_the_line
+            call self.addLineToTerminal(a:pipeName,a:line)
+        endif
+    else
+        call self.addLineToTerminal(a:pipeName,a:line)
+    endif
 
     let l:readResult=deepcopy(self.readResultTemplate,1)
 
