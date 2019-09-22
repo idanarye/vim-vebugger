@@ -75,6 +75,7 @@ function! s:f_debugger.handleLine(pipeName,line) dict
         for pattern in l:ignore_patterns
             if match(a:line, pattern) >= 0
                 let l:ignore_the_line = 1
+                break
             endif
         endfor
         if !l:ignore_the_line
