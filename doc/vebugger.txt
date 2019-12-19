@@ -363,6 +363,44 @@ the debugger interactive shell.
 *:VBGrawWriteSelectedText* Sends the selected text to the debugger interactive
 shell.
 
+CUSTOM COMMAND HOOKS                          *vebugger-custom-command-hooks*
+
+Before and after each command is sent to the debugger, a User autocmd is
+fired, which allows you to register your actions to do at this point.
+
+*Vebugger_PreUserAction* executed before each debugger command
+*Vebugger_PostUserAction* executed after each debugger command
+
+Before both of those are fired, *s:debugger.lastUserAction* is filled:
+
+>
+  let s:debugger.lastUserAction = {
+              \'action': a:action,
+              \'args': a:000}
+<
+
+Which you can use in your autocmd. For instance, if you put this in your
+vimrc you'll see two messages when executing a debugger action:
+
+Example: >
+  augroup VebuggerPrePostUserActions
+    autocmd!
+
+    function PrintActionName()
+      let l:debugger = vebugger#getActiveDebugger()
+      if has_key(l:debugger, 'lastUserAction')
+        let l:lastUserAction = l:debugger.lastUserAction
+        echom l:lastUserAction.action
+        echom join(l:lastUserAction.args)
+      else
+        echom "No lastuserAction set"
+      endif
+    endfunction
+
+    autocmd User Vebugger_PreUserAction call PrintActionName()
+    autocmd User Vebugger_PostUserAction :echom "after"
+  augroup END
+<
 
 KEYMAPS                                                    *vebugger-keymaps*
 
