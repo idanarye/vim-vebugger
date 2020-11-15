@@ -156,7 +156,8 @@ function! s:standardFunctions.addAllBreakpointActions(breakpoints) dict
         call self.addWriteAction('std','breakpoints',{
                     \'action':'add',
                     \'file':(l:breakpoint.file),
-                    \'line':(l:breakpoint.line)})
+                    \'line':(l:breakpoint.line),
+                    \'condition':(l:breakpoint.condition)})
     endfor
 endfunction
 
@@ -347,8 +348,12 @@ function! vebugger#std#updateMarksForFile(state,filename)
     endif
 endfunction
 
-"Toggle a breakpoint on and off
 function! vebugger#std#toggleBreakpoint(file,line)
+  call vebugger#std#toggleConditionalBreakpoint(a:file,a:line,"")
+endfunction
+
+"Toggle a breakpoint on and off
+function! vebugger#std#toggleConditionalBreakpoint(file,line,condition)
     let l:debugger=vebugger#getActiveDebugger()
     let l:debuggerState=empty(l:debugger)
                 \? {}
@@ -367,12 +372,13 @@ function! vebugger#std#toggleBreakpoint(file,line)
             return
         endif
     endfor
-    call add(g:vebugger_breakpoints,{'file':(a:file),'line':(a:line)})
+    call add(g:vebugger_breakpoints,{'file':(a:file),'line':(a:line),'condition':(a:condition)})
     if !empty(l:debugger)
         call l:debugger.addWriteActionAndPerform('std','breakpoints',{
                     \'action':'add',
                     \'file':(a:file),
-                    \'line':(a:line)})
+                    \'line':(a:line),
+                    \'condition':(a:condition)})
     endif
     call vebugger#std#updateMarksForFile(l:debuggerState,a:file)
 endfunction

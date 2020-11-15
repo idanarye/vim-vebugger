@@ -162,7 +162,7 @@ endfunction
 function! vebugger#gdb#_writeBreakpoints(writeAction,debugger)
 	for l:breakpoint in a:writeAction
 		if 'add'==(l:breakpoint.action)
-			call a:debugger.writeLine('break '.fnameescape(l:breakpoint.file).':'.l:breakpoint.line)
+			call a:debugger.writeLine('break '.fnameescape(l:breakpoint.file).':'.l:breakpoint.line.' '.l:breakpoint.condition)
 		elseif 'remove'==l:breakpoint.action
 			call a:debugger.writeLine('clear '.fnameescape(l:breakpoint.file).':'.l:breakpoint.line)
 		endif
